@@ -1,0 +1,17 @@
+{
+  "name": "maya-signer-docs",
+  "version": "1.0.0",
+  "description": "Documentación de Maya Signer",
+  "scripts": {
+    "src:dev": "vitepress dev .",
+    "src:build": "vitepress build .",
+    "src:preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "@types/mermaid": "^9.1.0",
+    "mermaid": "^11.10.1",
+    "vitepress": "^1.6.3",
+    "vue": "^3.3.0",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  }
+}
