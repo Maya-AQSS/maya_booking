@@ -1,0 +1,5 @@
+- FASE 1: Descubrimiento y Desglose completado. Archivo generado: docs/src/1_epics_and_features.md
+- FASE 3: Generación de Backlog Trello (17 issues creados en docs/src/backlog/)
+- FASE 4: Documentación Visual (generado docs/src/3_c4_diagrams.md)
+- FASE 5: Publicación en VitePress completada (sidebar y hero actualizados)
+- FASE 6: Subida del Backlog a GitHub Issues (17 Issues creados con sus prioridades y asignados al proyecto en https://github.com/Maya-AQSS/maya_booking)
