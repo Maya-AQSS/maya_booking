@@ -1,0 +1,19 @@
+from odoo import fields, models
+ 
+ 
+class PlaceSessionScheduleRel(models.Model):
+    _name = "maya_booking.place_session_schedule_rel"
+    _description = "Horario de reserva del espacio"
+ 
+    place_id = fields.Many2one("maya_booking.place", string="Espacio", required=True, ondelete="cascade")
+    day_of_week = fields.Selection([
+        ("0", "Lunes"),
+        ("1", "Martes"),
+        ("2", "Miércoles"),
+        ("3", "Jueves"),
+        ("4", "Viernes"),
+        ("5", "Sábado"),
+    ], string="Día", required=True)
+    hour_from = fields.Float(string="Hora inicio", required=True)
+    hour_to = fields.Float(string="Hora fin", required=True)
+ 
