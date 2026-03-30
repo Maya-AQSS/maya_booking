@@ -19,7 +19,7 @@ class BookingType(models.Model):
         ('S', 'Espacio'),    
         ('W', 'Puesto'),     
         ('I', 'Elemento de inventario'), ], 
-        default='s') 
+        default='S') 
     # resource_ids = fields.One2many('booking.type.resource', 'type_id') 
 
     # #  computed para mostrar cuántos recursos tiene asociados
