@@ -1,18 +1,21 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
- 
- 
+
+
 class Place(models.Model):
     _name = "maya_booking.place"
     _description = "Espacio de trabajo"
- 
-    name = fields.Char(string="Nombre", required=True, translate=True)
-    location_id = fields.Many2one("maya_core.location", string="Ubicación", required=True, ondelete="restrict")
- 
-    location_name = fields.Char(related="location_id.name", string="Nombre de ubicación", store=True)
- 
-    description = fields.Text(string="Descripción", translate=True)
- 
+
+    name = fields.Char(string="Nombre", required=True)
+    location_id = fields.Many2one(
+        "maya_core.location",
+        string="Ubicación",
+        required=True,
+        ondelete="restrict",
+    )
+    location_name = fields.Char(related="location_id.name", string="Nombre de ubicación")
+    description = fields.Text(string="Descripción")
+
     image = fields.Image(
         string="Imagen principal",
         max_width=1024,
@@ -28,16 +31,15 @@ class Place(models.Model):
         string="Plano del espacio",
         attachment=True,
     )
- 
-    booking_hours = fields.One2many(
-        "maya_booking.place_session_schedule_rel",
-        "place_id",
+
+    session_schedule_ids = fields.Many2many(
+        "maya_core.session_schedule",
         string="Horarios de reserva",
     )
- 
+
     @api.constrains("image", "image_360", "floor_plan_image")
     def _check_image_size(self):
-        max_size = 10 * 1024 * 1024  
+        max_size = 10 * 1024 * 1024
         for record in self:
             if record.image and len(record.image) > max_size:
                 raise ValidationError(_("La imagen principal es demasiado grande. Máximo 10 MB."))
@@ -45,10 +47,14 @@ class Place(models.Model):
                 raise ValidationError(_("La imagen 360° es demasiado grande. Máximo 10 MB."))
             if record.floor_plan_image and len(record.floor_plan_image) > max_size:
                 raise ValidationError(_("El plano es demasiado grande. Máximo 10 MB."))
- 
+
     def unlink(self):
         for record in self:
-            reservas = self.env["maya_booking.booking"].search_count([("place_id", "=", record.id)])
+            reservas = self.env["maya_booking.booking"].search_count(
+                [("place_id", "=", record.id)]
+            )
             if reservas > 0:
-                raise UserError(_("No se puede eliminar el espacio '%s' porque tiene reservas asociadas.") % record.name)
+                raise UserError(
+                    _("No se puede eliminar el espacio '%s' porque tiene reservas asociadas.") % record.name
+                )
         return super().unlink()
