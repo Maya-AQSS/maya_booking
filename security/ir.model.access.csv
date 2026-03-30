@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_maya_core_maya_core,maya_core.maya_core,model_maya_core_maya_core,base.group_user,1,1,1,1
+access_maya_booking_booking_type,maya_booking.booking_type,model_maya_booking_booking_type,base.group_user,1,1,1,1
+access_maya_booking_booking_type,maya_booking.booking_type,model_maya_booking_booking_type,base.group_user,1,1,1,1
