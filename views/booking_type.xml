@@ -13,11 +13,11 @@
                                 <field name="name"/>
                             </span>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-sm btn-secondary" title="Compartir">
-                                    Compartir
+                                <button class="btn btn-sm btn-secondary" title="Share">
+                                    Share
                                 </button>
-                                <button type="open" class="btn btn-sm btn-primary" title="Detalles">
-                                    Detalles
+                                <button type="open" class="btn btn-sm btn-primary" title="Configure">
+                                    Configure
                                 </button>
                             </div>
                         </div>
