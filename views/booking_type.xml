@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_booking_type_kanban" model="ir.ui.view">
+        <field name="name">maya_booking.booking_type.kanban</field>
+        <field name="model">maya_booking.booking_type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_ungrouped">
+                <field name="name"/>
+                <templates>
+                    <t t-name="card">
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 16px;">
+                            <span style="font-weight: bold; font-size: 1rem;">
+                                <field name="name"/>
+                            </span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" title="Compartir">
+                                    Compartir
+                                </button>
+                                <button type="open" class="btn btn-sm btn-primary" title="Detalles">
+                                    Detalles
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_booking_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Recurso</field>
+        <field name="res_model">maya_booking.booking_type</field>
+        <field name="view_mode">kanban,form</field>
+    </record>
+
+    <menuitem id="menu_maya_booking_root"
+        name="Maya | Booking"
+        sequence="10"/>
+
+    <menuitem id="menu_booking_type"
+        name="Tipos de Recurso"
+        parent="menu_maya_booking_root"
+        action="action_booking_type"
+        sequence="10"/>
+</odoo>
