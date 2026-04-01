@@ -4,11 +4,11 @@
         <field name="name">maya_booking.booking_type.kanban</field>
         <field name="model">maya_booking.booking_type</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_ungrouped">
+            <kanban class="o_kanban_ungrouped" action="action_open_timeline" type="object">
                 <field name="name"/>
                 <templates>
                     <t t-name="card">
-                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 16px;">
+                        <div class="oe_kanban_global_click" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 16px;">
                             <span style="font-weight: bold; font-size: 1rem;">
                                 <field name="name"/>
                             </span>
@@ -24,6 +24,21 @@
                     </t>
                 </templates>
             </kanban>
+        </field>
+    </record>
+
+    <record id="view_booking_example_timeline" model="ir.ui.view">
+        <field name="name">maya_booking.booking_example.timeline</field>
+        <field name="model">maya_booking.booking_example</field>
+        <field name="arch" type="xml">
+            <timeline date_start="date_start" 
+                      date_stop="date_stop" 
+                      default_group_by="resource_id"
+                      event_open_popup="true"
+                      zoomKey="ctrlKey">
+                <field name="name"/>
+                <field name="resource_id"/>
+            </timeline>
         </field>
     </record>
 

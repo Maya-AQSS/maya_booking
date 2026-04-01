@@ -29,3 +29,19 @@ class BookingType(models.Model):
     def _compute_resource_count(self):
         for record in self:
             record.resource_count = len(record.resource_ids)
+
+    def action_open_timeline(self):
+        """
+        Abre la vista timeline desde el kanban
+        """
+        self.ensure_one() 
+        
+        return {
+            'name': f'Calendario: {self.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'maya_booking.booking_example', 
+            'view_mode': 'timeline,list,form',
+            #filtro para mostrar solo las reservas de este tipo de recurso
+            'domain': [('resource_id.type_id', '=', self.id)],
+            'context': {}
+        }

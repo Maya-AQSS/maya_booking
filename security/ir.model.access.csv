@@ -2,3 +2,4 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_maya_booking_booking_type,maya_booking.booking_type,model_maya_booking_booking_type,base.group_user,1,1,1,1
 access_maya_booking_booking_type_resource,maya_booking.booking_type_resource,model_maya_booking_booking_type_resource,base.group_user,1,1,1,1
 access_maya_booking_place,maya_booking.place,model_maya_booking_place,base.group_user,1,1,1,1
+access_booking_example,booking.example.access,model_maya_booking_booking_example,base.group_user,1,1,1,1
