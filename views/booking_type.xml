@@ -35,9 +35,10 @@
                       date_stop="date_stop" 
                       default_group_by="resource_id"
                       event_open_popup="true"
-                      zoomKey="ctrlKey">
+                      zoomKey="ctrlKey"
+                      mode="week">
                 <field name="name"/>
-                <field name="resource_id"/>
+                <field name="resource_id" required="true"/>
             </timeline>
         </field>
     </record>
