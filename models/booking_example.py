@@ -73,6 +73,15 @@ class BookingExample(models.Model):
         string=_("Estado para Timeline")
     )
 
+    def write(self, vals):
+        """
+        Bloquea cualquier intento de modificar las fechas de un slot existente.
+        """
+        if 'date_start' in vals or 'date_stop' in vals:
+            raise ValidationError(_("Las fechas de las sesiones son fijas. No puedes modificar ni arrastrar las reservas en el calendario."))
+            
+        return super().write(vals)
+
     @api.depends('state', 'is_past')
     def _compute_timeline_state(self):
         """Unifica el estado y el tiempo para que la vista no tenga que pensar"""
@@ -156,14 +165,14 @@ class BookingExample(models.Model):
             if motivo in ('Disponible', 'Available') or not motivo:
                 raise ValidationError(_("Por favor, introduce un motivo real para la reserva en lugar de 'Disponible'."))
 
-            # 1. Marcar el registro actual como reservado
+            # Marcar el registro actual como reservado
             record.write({
                 'state': 'booked',
                 'name': motivo,
                 'user_id': self.env.user.id
             })
 
-            # 2. Procesar los slots adicionales seleccionados
+            # Procesar los slots adicionales seleccionados
             slots_adicionales = record.additional_slot_ids.filtered(lambda s: s.state == 'available')
             if slots_adicionales:
                 slots_adicionales.write({
