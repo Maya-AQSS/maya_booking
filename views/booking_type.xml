@@ -13,17 +13,80 @@
                                 <field name="name"/>
                             </span>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-sm btn-secondary" title="Share">
-                                    Share
-                                </button>
-                                <button type="open" class="btn btn-sm btn-primary" title="Configure">
-                                    Configure
-                                </button>
+                                <button class="btn btn-sm btn-secondary" title="Share">Share</button>
+                                <button type="open" class="btn btn-sm btn-primary" title="Configure">Configure</button>
                             </div>
                         </div>
                     </t>
                 </templates>
             </kanban>
+        </field>
+    </record>
+
+    <record id="view_booking_type_form" model="ir.ui.view">
+        <field name="name">maya_booking.booking_type.form</field>
+        <field name="model">maya_booking.booking_type</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre del Tipo..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="description"/>
+                            <field name="duration"/>
+                            <field name="resource_type"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Recursos Asociados">
+                            <field name="resource_ids" widget="many2many"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_booking_example_form" model="ir.ui.view">
+        <field name="name">maya_booking.booking_example.form</field>
+        <field name="model">maya_booking.booking_example</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_book_slot" string="Guardar Reserva" type="object" class="oe_highlight" invisible="state == 'booked'"/>
+                    <button name="action_cancel_booking" string="Cancelar Reserva" type="object" invisible="state == 'available'"/>
+                    <field name="state" invisible="1"/> 
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Motivo / Descripción"/>
+                        <field name="name" required="1" placeholder="Ej: Reunión de departamento..." readonly="state == 'booked'"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="resource_id" readonly="1" force_save="1"/>
+                            <field name="user_id" readonly="1" force_save="1"/>
+                        </group>
+                        <group>
+                            <field name="date_start" readonly="1" force_save="1"/>
+                            <field name="date_stop" readonly="1" force_save="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook invisible="state == 'booked'">
+                        <page string="Seleccionar Sesiones Adicionales">
+                            <p class="text-muted">
+                                Selecciona otras sesiones disponibles esta semana para añadirlas a esta misma reserva:
+                            </p>
+                            <field name="available_slot_domain_ids" invisible="1"/>
+                            
+                            <field name="additional_slot_ids" widget="many2many_checkboxes" domain="[('id', 'in', available_slot_domain_ids)]"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
         </field>
     </record>
 
@@ -36,9 +99,28 @@
                       default_group_by="resource_id"
                       event_open_popup="true"
                       zoomKey="ctrlKey"
-                      mode="week">
+                      move="0" 
+                      resize="0"
+                      mode="week"
+                      colors="#90EE90: state == 'available'; #FF7F7F: state == 'booked';">
+                
                 <field name="name"/>
                 <field name="resource_id" required="true"/>
+                <field name="state"/>
+                <field name="user_id"/>
+
+                <templates>
+                    <t t-name="timeline-item">
+                        <div class="o_timeline_item_content" style="padding: 2px;">
+                            <t t-if="record.state == 'booked'">
+                                <t t-esc="record.user_id ? record.user_id[1] : 'Sistema'"/> - <t t-esc="record.name"/>
+                            </t>
+                            <t t-if="record.state == 'available'">
+                                Disponible
+                            </t>
+                        </div>
+                    </t>
+                </templates>
             </timeline>
         </field>
     </record>
@@ -58,4 +140,5 @@
         parent="menu_maya_booking_root"
         action="action_booking_type"
         sequence="10"/>
+
 </odoo>
