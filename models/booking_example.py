@@ -56,6 +56,42 @@ class BookingExample(models.Model):
         help=_("Permite reservar múltiples sesiones disponibles en la misma acción.")
     )
 
+    is_past = fields.Boolean(
+        string=_("Es Pasado"),
+        compute='_compute_is_past',
+        help=_("Indica si la sesión ya ha comenzado o finalizado.")
+    )
+    
+    timeline_state = fields.Selection(
+        selection=[
+            ('available', _('Disponible')),
+            ('booked', _('Reservado')),
+            ('past_available', _('Pasado (Libre)')),
+            ('past_booked', _('Pasado (Reservado)'))
+        ],
+        compute='_compute_timeline_state',
+        string=_("Estado para Timeline")
+    )
+
+    @api.depends('state', 'is_past')
+    def _compute_timeline_state(self):
+        """Unifica el estado y el tiempo para que la vista no tenga que pensar"""
+        for record in self:
+            if record.is_past:
+                if record.state == 'booked':
+                    record.timeline_state = 'past_booked'
+                else:
+                    record.timeline_state = 'past_available'
+            else:
+                record.timeline_state = record.state
+
+    @api.depends('date_start')
+    def _compute_is_past(self):
+        """Calcula en tiempo real si el slot ya se ha quedado atrás"""
+        now = fields.Datetime.now()
+        for record in self:
+            record.is_past = bool(record.date_start and record.date_start < now)
+
     def _compute_display_name(self):
         """
         Sobrescribe el nombre a mostrar en los registros para que las casillas 
@@ -112,6 +148,8 @@ class BookingExample(models.Model):
         seleccionados en el formulario de forma concurrente.
         """
         for record in self:
+            if record.is_past:
+                raise ValidationError(_("No puedes realizar ni modificar reservas de sesiones que ya han pasado."))
             motivo = record.name
             
             # Validación del motivo escrito por el usuario
