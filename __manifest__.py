@@ -26,7 +26,6 @@
     'data': [
         'security/ir.model.access.csv',
         'views/booking_type.xml',
-        'views/booking_cron.xml'
     ],
     
     'installable': True,

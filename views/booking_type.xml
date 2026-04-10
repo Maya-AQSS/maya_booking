@@ -49,50 +49,41 @@
         </field>
     </record>
 
-    <record id="view_booking_example_form" model="ir.ui.view">
-        <field name="name">maya_booking.booking_example.form</field>
-        <field name="model">maya_booking.booking_example</field>
+    <record id="view_booking_form" model="ir.ui.view">
+        <field name="name">maya_booking.booking.form</field>
+        <field name="model">maya_booking.booking</field>
         <field name="arch" type="xml">
-            <form>
-                <header>
-                    <button name="action_book_slot" string="Guardar Reserva" type="object" class="oe_highlight" invisible="state == 'booked' or is_past == True"/>
-                    <button name="action_cancel_booking" string="Cancelar Reserva" type="object" invisible="state == 'available' or is_past == True"/>
-                    <field name="state" invisible="1"/> 
-                    <field name="is_past" invisible="1"/> </header>
+            <form string="Reserva">
                 <sheet>
                     <div class="oe_title">
                         <label for="name" string="Motivo / Descripción"/>
-                        <field name="name" required="1" placeholder="Ej: Reunión de departamento..." readonly="state == 'booked'"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Reunión de departamento..." required="1"/>
+                        </h1>
                     </div>
                     <group>
-                        <group>
-                            <field name="resource_id" readonly="1" force_save="1"/>
-                            <field name="user_id" readonly="1" force_save="1"/>
+                        <group string="Detalles del Recurso">
+                            <field name="resource_id" options="{'no_create': True}"/>
+                            <field name="user_id"/>
                         </group>
-                        <group>
-                            <field name="date_start" readonly="1" force_save="1"/>
-                            <field name="date_stop" readonly="1" force_save="1"/>
+                        <group string="Selección de Horario">
+                            <field name="booking_date"/>
+                            <field name="available_schedule_ids" invisible="1"/>
+                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/>
+                            <field name="session_count"/>
+                            
+                            <field name="date_start" force_save="1" readonly="1"/>
+                            <field name="date_stop" force_save="1" readonly="1"/>
                         </group>
                     </group>
-                    
-                    <notebook invisible="state == 'booked'">
-                        <page string="Seleccionar Sesiones Adicionales">
-                            <p class="text-muted">
-                                Selecciona otras sesiones disponibles esta semana para añadirlas a esta misma reserva:
-                            </p>
-                            <field name="available_slot_domain_ids" invisible="1"/>
-                            
-                            <field name="additional_slot_ids" widget="many2many_checkboxes" domain="[('id', 'in', available_slot_domain_ids)]"/>
-                        </page>
-                    </notebook>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <record id="view_booking_example_timeline" model="ir.ui.view">
-        <field name="name">maya_booking.booking_example.timeline</field>
-        <field name="model">maya_booking.booking_example</field>
+    <record id="view_booking_timeline" model="ir.ui.view">
+        <field name="name">maya_booking.booking.timeline</field>
+        <field name="model">maya_booking.booking</field>
         <field name="arch" type="xml">
             <timeline date_start="date_start" 
                       date_stop="date_stop" 
@@ -100,31 +91,16 @@
                       event_open_popup="true"
                       zoomKey="ctrlKey"
                       mode="week"
-                      move="0" 
-                      resize="0"
-                      colors="#D3D3D3: timeline_state == 'past_available'; #888888: timeline_state == 'past_booked'; #90EE90: timeline_state == 'available'; #FF7F7F: timeline_state == 'booked';">
+                      colors="#FF7F7F: user_id != false;"> 
                 
                 <field name="name"/>
-                <field name="resource_id" required="true"/>
-                <field name="timeline_state"/>
+                <field name="resource_id"/>
                 <field name="user_id"/>
 
                 <templates>
                     <t t-name="timeline-item">
                         <div class="o_timeline_item_content" style="padding: 2px;">
-                            
-                            <t t-if="record.timeline_state == 'booked' or record.timeline_state == 'past_booked'">
-                                <t t-esc="record.user_id ? record.user_id[1] : 'Sistema'"/> - <t t-esc="record.name"/>
-                            </t>
-                            
-                            <t t-elif="record.timeline_state == 'past_available'">
-                                <span style="color: #666;">Expirado</span>
-                            </t>
-                            
-                            <t t-else="">
-                                Disponible
-                            </t>
-                            
+                            <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
                         </div>
                     </t>
                 </templates>

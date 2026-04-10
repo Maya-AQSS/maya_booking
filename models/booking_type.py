@@ -39,7 +39,7 @@ class BookingType(models.Model):
         return {
             'name': f'Calendario: {self.name}',
             'type': 'ir.actions.act_window',
-            'res_model': 'maya_booking.booking_example', 
+            'res_model': 'maya_booking.booking', 
             'view_mode': 'timeline,list,form',
             #filtro para mostrar solo las reservas de este tipo de recurso
             'domain': [('resource_id.type_id', '=', self.id)],
