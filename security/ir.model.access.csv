@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_maya_core_maya_core,maya_core.maya_core,model_maya_core_maya_core,base.group_user,1,1,1,1
+access_maya_booking_place,maya_booking.place,model_maya_booking_place,base.group_user,1,1,1,1
+access_maya_booking_resource,maya_booking.resource,model_maya_booking_resource,base.group_user,1,1,1,1
