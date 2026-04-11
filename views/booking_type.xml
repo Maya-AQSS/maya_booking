@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_booking_type_kanban" model="ir.ui.view">
+        <field name="name">maya_booking.booking_type.kanban</field>
+        <field name="model">maya_booking.booking_type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_ungrouped" action="action_open_timeline" type="object">
+                <field name="name"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 16px;">
+                            <span style="font-weight: bold; font-size: 1rem;">
+                                <field name="name"/>
+                            </span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" title="Share">Share</button>
+                                <button type="open" class="btn btn-sm btn-primary" title="Configure">Configure</button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_booking_type_form" model="ir.ui.view">
+        <field name="name">maya_booking.booking_type.form</field>
+        <field name="model">maya_booking.booking_type</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre del Tipo..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="description"/>
+                            <field name="duration"/>
+                            <field name="resource_type"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Recursos Asociados">
+                            <field name="resource_ids" widget="many2many"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_booking_form" model="ir.ui.view">
+        <field name="name">maya_booking.booking.form</field>
+        <field name="model">maya_booking.booking</field>
+        <field name="arch" type="xml">
+            <form string="Reserva">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Motivo / Descripción"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Reunión de departamento..." required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Detalles del Recurso">
+                            <field name="resource_id" options="{'no_create': True}"/>
+                            <field name="user_id"/>
+                        </group>
+                        <group string="Selección de Horario">
+                            <field name="booking_date"/>
+                            <field name="available_schedule_ids" invisible="1"/>
+                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/>
+                            <field name="session_count"/>
+                            
+                            <field name="date_start" force_save="1" readonly="1"/>
+                            <field name="date_stop" force_save="1" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_booking_timeline" model="ir.ui.view">
+        <field name="name">maya_booking.booking.timeline</field>
+        <field name="model">maya_booking.booking</field>
+        <field name="arch" type="xml">
+            <timeline date_start="date_start" 
+                      date_stop="date_stop" 
+                      default_group_by="resource_id"
+                      event_open_popup="true"
+                      zoomKey="ctrlKey"
+                      mode="week"
+                      colors="#FF7F7F: user_id != false;"> 
+                
+                <field name="name"/>
+                <field name="resource_id"/>
+                <field name="user_id"/>
+
+                <templates>
+                    <t t-name="timeline-item">
+                        <div class="o_timeline_item_content" style="padding: 2px;">
+                            <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
+                        </div>
+                    </t>
+                </templates>
+            </timeline>
+        </field>
+    </record>
+
+    <record id="action_booking_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Recurso</field>
+        <field name="res_model">maya_booking.booking_type</field>
+        <field name="view_mode">kanban,form</field>
+    </record>
+
+    <menuitem id="menu_maya_booking_root"
+        name="Maya | Booking"
+        sequence="10"/>
+
+    <menuitem id="menu_booking_type"
+        name="Tipos de Recurso"
+        parent="menu_maya_booking_root"
+        action="action_booking_type"
+        sequence="10"/>
+
+</odoo>
