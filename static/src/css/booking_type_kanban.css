@@ -1,0 +1,81 @@
+.o_booking_type_kanban .o_kanban_renderer {
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+}
+
+.o_booking_type_kanban .o_kanban_record {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    min-height: unset !important;
+    height: auto !important;
+    margin: 0 0 4px 0 !important;
+    border-radius: 4px !important;
+}
+
+.o_booking_type_kanban .o_kanban_ghost {
+    display: none !important;
+}
+
+.o_booking_type_kanban .o_card_body {
+    padding: 0 !important;
+    min-height: unset !important;
+    height: auto !important;
+}
+
+.o_booking_row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 16px;
+    gap: 16px;
+}
+
+.o_booking_icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background-color: #7c3aed;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.o_booking_cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+}
+
+.o_booking_label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.o_booking_value {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.o_booking_buttons {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
