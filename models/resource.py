@@ -1,6 +1,5 @@
 from odoo import fields, models, _
 
-
 class Resource(models.Model):
     _name = 'maya_booking.resource'
     _description = 'Recurso reservable'
@@ -12,5 +11,9 @@ class Resource(models.Model):
     name = fields.Char(string=_('Nombre'), required=True)
 
     active = fields.Boolean(string=_('Activo'), default=True)
+    
+    bookable = fields.Boolean(string=_('Reservable'), default=True)  
 
     booking_limit_date = fields.Date(string=_('Fecha límite de reserva'))
+    
+    last_reservation_date = fields.Datetime(string=_('Última reserva')) 

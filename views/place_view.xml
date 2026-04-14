@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_maya_booking_place_list" model="ir.ui.view">
+        <field name="name">maya_booking.place.list</field>
+        <field name="model">maya_booking.place</field>
+        <field name="arch" type="xml">
+            <list string="Espacios">
+                <field name="name"/>
+                <field name="location_id"/>
+                <field name="resource_type"/>
+                <field name="bookable"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_maya_booking_place_kanban" model="ir.ui.view">
+        <field name="name">maya_booking.place.kanban</field>
+        <field name="model">maya_booking.place</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="location_id"/>
+                <field name="resource_type"/>
+                <field name="image"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('maya_booking.place', 'image_medium', record.id.raw_value)" style="width: 100%; height: 150px; object-fit: cover;"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div class="text-muted">
+                                    <field name="location_id"/>
+                                </div>
+                                <div>
+                                    <t t-if="record.resource_type.raw_value == 'S'">
+                                        <span class="badge bg-secondary">Espacio</span>
+                                    </t>
+                                    <t t-elif="record.resource_type.raw_value == 'E'">
+                                        <span class="badge bg-info">Empleado</span>
+                                    </t>
+                                    <t t-elif="record.resource_type.raw_value == 'W'">
+                                        <span class="badge bg-success">Puesto</span>
+                                    </t>
+                                    <t t-elif="record.resource_type.raw_value == 'I'">
+                                        <span class="badge bg-warning">Inventario</span>
+                                    </t>
+                                </div>
+                                <div t-if="record.bookable.raw_value">
+                                    <span class="badge bg-success">Reservable</span>
+                                </div>
+                                <div t-if="!record.bookable.raw_value">
+                                    <span class="badge bg-danger">No reservable</span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_maya_booking_place_form" model="ir.ui.view">
+        <field name="name">maya_booking.place.form</field>
+        <field name="model">maya_booking.place</field>
+        <field name="arch" type="xml">
+            <form string="Espacio">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del espacio..."/>
+                        </h1>
+                        <group>
+                            <field name="bookable" widget="boolean_toggle"/>
+                        </group>
+                    </div>
+
+                    <group name="main_info" string="Información Principal">
+                        <group name="basic_info" string="Datos básicos">
+                            <field name="location_id" options="{'no_create': True}"/>
+                            <field name="resource_type"/>
+                        </group>
+                        <group name="reservable_info" string="Configuración de reservas"
+                               invisible="not bookable">
+                            <field name="duration"/>
+                            <field name="booking_limit_date"/>
+                        </group>
+                    </group>
+
+                    <group name="images" string="Imágenes">
+                        <field name="image" widget="image" class="oe_avatar"/>
+                        <field name="image_360" widget="image"/>
+                        <field name="floor_plan_image" widget="image"/>
+                        <field name="is_panoramic"/>
+                    </group>
+
+                    <group name="schedules" string="Horarios">
+                        <field name="session_schedule_ids" widget="many2many_tags"/>
+                    </group>
+
+                    <group name="description" string="Descripción">
+                        <field name="description" nolabel="1" placeholder="Descripción detallada del espacio..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_maya_booking_place" model="ir.actions.act_window">
+        <field name="name">Espacios</field>
+        <field name="res_model">maya_booking.place</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer espacio
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_maya_booking_place"
+        name="Espacios"
+        parent="menu_maya_booking_root"
+        action="action_maya_booking_place"
+        sequence="20"/>
+
+</odoo>

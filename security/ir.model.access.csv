@@ -3,4 +3,4 @@ access_maya_booking_booking_type,maya_booking.booking_type,model_maya_booking_bo
 access_maya_booking_booking_type_resource,maya_booking.booking_type_resource,model_maya_booking_booking_type_resource,base.group_user,1,1,1,1
 access_maya_booking_place,maya_booking.place,model_maya_booking_place,base.group_user,1,1,1,1
 access_maya_booking_resource,maya_booking.resource,model_maya_booking_resource,base.group_user,1,1,1,1
-access_booking_example,booking.example.access,model_maya_booking_booking_example,base.group_user,1,1,1,1
+access_maya_booking_booking,maya_booking.booking,model_maya_booking_booking,base.group_user,1,1,1,1

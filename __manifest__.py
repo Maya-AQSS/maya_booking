@@ -11,11 +11,11 @@
     'category': 'Productivity',
     'license': 'AGPL-3',
     'price': 0,
-    'depends': ['base', 'maya_core'],
+    'depends': ['base', 'maya_core', 'web_timeline'],
     'data': [
         'security/ir.model.access.csv',
         'views/booking_type.xml',
-        'views/booking_cron.xml',
+        'views/place_view.xml',
     ],
     'installable': True,
     'application': False,

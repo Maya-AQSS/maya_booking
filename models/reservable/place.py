@@ -1,5 +1,4 @@
-from odoo import models
-
+from odoo import models, fields
 
 class Place(models.Model):
     _name = 'maya_booking.place'
