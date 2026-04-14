@@ -6,7 +6,7 @@ import pytz
 
 class Booking(models.Model):
     _name = 'maya_booking.booking'
-    _description = _('Reserva de Recurso')
+    _description = _('Reservas')
 
     name = fields.Char(string=_("Motivo / Descripción"), required=True)
     
@@ -52,7 +52,7 @@ class Booking(models.Model):
         day_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V'}
         for record in self:
             if record.booking_date and record.resource_id:
-                place = self.env['maya_booking.place'].browse(record.resource_id.reservable_id)
+                place = self.env['maya_core.place'].browse(record.resource_id.reservable_id)
                 weekday_str = day_map.get(record.booking_date.weekday())
                 
                 if weekday_str:
@@ -89,7 +89,7 @@ class Booking(models.Model):
             record.date_start = dt_start_local.astimezone(pytz.UTC).replace(tzinfo=None)
             
             # Calcular Fecha Fin sumando sesiones consecutivas
-            place = self.env['maya_booking.place'].browse(record.resource_id.reservable_id)
+            place = self.env['maya_core.place'].browse(record.resource_id.reservable_id)
             weekday_str = day_map.get(record.booking_date.weekday())
             schedules = place.session_schedule_ids.filtered(lambda s: s.week_day == weekday_str).sorted('start_time')
             
