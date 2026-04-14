@@ -1,7 +1,7 @@
 {
-  "name": "maya-signer-docs",
+  "name": "maya-booking-docs",
   "version": "1.0.0",
-  "description": "Documentación de Maya Signer",
+  "description": "Documentación de Maya | Booking",
   "scripts": {
     "src:dev": "vitepress dev .",
     "src:build": "vitepress build .",

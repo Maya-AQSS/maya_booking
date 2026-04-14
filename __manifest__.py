@@ -11,12 +11,17 @@
     'category': 'Productivity',
     'license': 'AGPL-3',
     'price': 0,
+
+    # any module necessary for this one to work correctly
     'depends': ['base', 'maya_core', 'web_timeline'],
+
+    # always loaded
     'data': [
         'security/ir.model.access.csv',
-        'views/booking_type.xml',
+        'views/views.xml',
         'views/place_view.xml',
     ],
+    
     'installable': True,
     'application': False,
 }
