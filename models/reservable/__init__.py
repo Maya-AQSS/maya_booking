@@ -1,2 +1,2 @@
 from . import place
-from . import resource
+# from . import resource

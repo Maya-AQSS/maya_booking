@@ -13,11 +13,11 @@ class Booking(models.Model):
 
     name = fields.Char(string=_("Motivo / Descripción"), required=True)
     
-    resource_id = fields.Many2one(
+    """  resource_id = fields.Many2one(
         comodel_name='maya_booking.booking_type_resource', 
         string=_("Recurso a reservar"), 
         required=True
-    )
+    ) """
     
     user_id = fields.Many2one(
         comodel_name='res.users', 
@@ -49,7 +49,7 @@ class Booking(models.Model):
     date_start = fields.Datetime(string=_("Fecha/Hora Inicio"), compute='_compute_dates', store=True)
     date_stop = fields.Datetime(string=_("Fecha/Hora Fin"), compute='_compute_dates', store=True)
 
-    @api.depends('booking_date', 'resource_id')
+    # @api.depends('booking_date', 'resource_id')
     def _compute_available_schedules(self):
       """
       Busca las sesiones configuradas para ese recurso y ese día de la semana

@@ -10,16 +10,21 @@
         <field name="name"/>
         <templates>
           <t t-name="card">
-            <div class="oe_kanban_global_click" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 16px;">
-              <span style="font-weight: bold; font-size: 1rem;">
-                <field name="name"/>
-              </span>
-              <div style="display: flex; gap: 8px;">
+            <div class="oe_kanban_global_click w-100 d-flex align-items-center justify-content-between p-3 mb-1">
+              
+              <div class="d-flex align-items-center">
+                <span class="fw-bold fs-5">
+                  <field name="name"/>
+                </span>
+              </div>
+
+              <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-secondary" title="Publicar">Publicar</button>
                 <button type="open" class="btn btn-sm btn-primary" title="Editar">Editar</button>
               </div>
+
             </div>
-           </t>
+          </t>
         </templates>
       </kanban>
     </field>
@@ -38,16 +43,38 @@
             <group>
             <field name="description"/>
             <field name="duration"/>
-            <field name="resource_type"/>
+            <!-- <field name="resource_type"/> -->
+            <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
             </group>
           </group>
           <notebook>
             <page string="Recursos Asociados">
-            <field name="resource_ids" widget="many2many"/>
+            <!-- <field name="resource_ids" widget="many2many"/> -->
+              <field name="resource_ids">
+               
+              </field>
             </page>
           </notebook>
         </sheet>
       </form>
+    </field>
+  </record>
+
+  <record model="ir.ui.view" id="maya_booking.view_place_form_inherit">
+    <field name="name">Formulario espacios. Añade reservas</field>
+    <field name="model">maya_core.place</field>
+    <field name="inherit_id" ref="maya_core.view_place_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/notebook/page[1]" position="after">
+        <page string = "Reservas">
+          <group>
+            <field name="bookable" widget="boolean_toggle"/>
+            <field name="num_max_session_consecutive"/>
+            <field name="max_days_in_advance"/>
+            <field name="booking_limit_date"/>
+          </group>
+        </page>
+      </xpath>
     </field>
   </record>
 
@@ -65,7 +92,7 @@
                     </div>
                     <group>
                         <group string="Detalles del Recurso">
-                            <field name="resource_id" options="{'no_create': True}"/>
+                           <!--  <field name="resource_id" options="{'no_create': True}"/> -->
                             <field name="user_id"/>
                         </group>
                         <group string="Selección de Horario">
@@ -86,17 +113,18 @@
     <record id="maya_booking.view_booking_timeline" model="ir.ui.view">
       <field name="name">maya_booking.booking.timeline</field>
       <field name="model">maya_booking.booking</field>
+       <!-- default_group_by="resource_id" -->
       <field name="arch" type="xml">
         <timeline date_start="date_start" 
                     date_stop="date_stop" 
-                    default_group_by="resource_id"
+                   
                     event_open_popup="true"
                     zoomKey="ctrlKey"
                     mode="week"
                     colors="#FF7F7F: user_id != false;"> 
             
           <field name="name"/>
-          <field name="resource_id"/>
+        <!--   <field name="resource_id"/> -->
           <field name="user_id"/>
 
           <templates>

@@ -3,14 +3,14 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
-class BookingTypeResource(models.Model):
+class BookingResource(models.Model):
   """
   Interfaz polimórfico con varios tipos de recursos. 
   Permite asignar a un tipo de reserva una lista de BookingTypeResources, aunque cada uno de ellos
   apunte a un tipo de recurso diferente: empleado, espacio, material, puesto de trabajo...
   """
 
-  _name = 'maya_booking.booking_type_resource'
+  _name = 'maya_booking.booking_resource'
   _description = 'Recursos reservables'
 
   type_id = fields.Many2one('maya_booking.booking_type', ondelete='cascade') 
@@ -34,7 +34,6 @@ class BookingTypeResource(models.Model):
     """
     return [
       ('maya_core.place', 'Espacios'),
-      ('res.partner', 'Contacto/Empresa (Prueba)'),
       ('maya_core.employee', 'Empleados'), 
     ]
 

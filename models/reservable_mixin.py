@@ -15,9 +15,20 @@ class ReservableMixin(models.AbstractModel):
         ('I', 'Elemento de inventario'),
     ], string='Tipo de recurso', default='S')
     
-    duration = fields.Float(string='Duración predeterminada', default=1.0)
+    num_max_session_consecutive = fields.Integer(string='Número máximo de sesiones consecutivas', 
+                                                 help="Número máximo de sesiones consecutivas que se pueden reservar. 0: Sin límite (hasta final del día)",
+                                               default=2)
+
+    max_days_in_advance = fields.Integer(string='Reserva con antelación (días)', 
+                                         help="Máximos días de antelación con los que se puede realizar una reserva. 0: sin límite", default=15)
     
     booking_limit_date = fields.Date(string='Fecha límite de reserva')
+
+    session_schedule_ids = fields.Many2many(
+        "maya_core.session_schedule",
+        string=_("Horarios posibles de reserva"),
+        help=_("Consultar las reservas para ver la disponibilidad"),
+    )
     
     @api.model_create_multi
     def create(self, vals_list):

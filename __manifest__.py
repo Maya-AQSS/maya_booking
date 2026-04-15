@@ -15,11 +15,16 @@
     # any module necessary for this one to work correctly
     'depends': ['base', 'maya_core', 'web_timeline'],
 
+    'assets': {
+        'web.assets_backend': [
+            'maya_booking/static/src/css/booking_type_kanban.css',
+        ],
+    },
+
     # always loaded
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
-        'views/place_view.xml',
     ],
     
     'installable': True,

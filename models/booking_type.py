@@ -20,13 +20,10 @@ class BookingType(models.Model):
         ('W', 'Puesto'),     
         ('I', 'Elemento de inventario'), ], 
         default='S') 
-    resource_ids = fields.One2many('maya_booking.booking_type_resource', 'type_id')
+    published = fields.Boolean(_('Publicado'), default=False)
 
-    bookable_resource_ids = fields.Many2many(
-        'maya_booking.resource',
-        string=_('Recursos disponibles'),
-        domain="[('model_name', '=', resource_model)]"  
-    )
+    resource_ids = fields.One2many('maya_booking.booking_resource', 'type_id',
+                                     domain="[('reservable_model', '=', resource_model)]"  )
     
     resource_count = fields.Integer(
         compute='_compute_resource_count',
@@ -36,7 +33,12 @@ class BookingType(models.Model):
     resource_model = fields.Char(
         compute='_compute_resource_model',
         string=_('Modelo de recurso'),
-        store=True
+    )
+
+    bookable_resource_ids = fields.Many2many(
+        'maya_booking.resource',
+        string=_('Recursos disponibles'),
+        domain="[('model_name', '=', resource_model)]"  
     )
 
     # computed para mostrar cuántos recursos tiene asociados
@@ -67,7 +69,7 @@ class BookingType(models.Model):
             raise ValidationError(
                 _('No se pueden mezclar diferentes tipos de recursos. '
                   'Todos los recursos deben ser del mismo modelo.')
-            )
+            ) 
 
     def action_open_timeline(self):
       """
