@@ -29,7 +29,9 @@ class ReservableMixin(models.AbstractModel):
         string=_("Horarios posibles de reserva"),
         help=_("Consultar las reservas para ver la disponibilidad"),
     )
-    
+
+    display_name = fields.Char(string="Descripción", compute="_compute_display_name")
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)

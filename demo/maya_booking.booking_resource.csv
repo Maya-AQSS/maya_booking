@@ -1,0 +1,4 @@
+id,reservable_model,reservable_id:id
+maya_booking.resource_1,maya_core.place,1
+maya_booking.resource_2,maya_core.place,4
+maya_booking.resource_3,maya_core.employee,1

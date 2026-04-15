@@ -13,7 +13,7 @@ class BookingResource(models.Model):
   _name = 'maya_booking.booking_resource'
   _description = 'Recursos reservables'
 
-  type_id = fields.Many2one('maya_booking.booking_type', ondelete='cascade') 
+  booking_type_ids = fields.Many2many('maya_booking.booking_type', string = 'Tipos de reserva', help = 'Tipos de reserva en los que aparece este recurso',ondelete='cascade') 
 
   reservable_model = fields.Char(string="Modelo del recurso", required=True) # el modelo 
   reservable_id = fields.Integer(string="ID del recurso", required=True)  # el id del registro al que queremos apuntar
@@ -23,9 +23,10 @@ class BookingResource(models.Model):
     string="Recurso físico",
     compute='_compute_reservable_ref', 
     # inverse='_inverse_reservable_ref', 
-    store=True,
-    required=True 
+    store=True
   )
+  
+  resource_name = fields.Char(string="Descripción del recurso", compute="_compute_resource_name")
 
   @api.model
   def _get_reservable_models(self):
@@ -60,3 +61,11 @@ class BookingResource(models.Model):
         rec.reservable_model = False
         rec.reservable_id = 0
 
+  @api.depends('reservable_ref')
+  def _compute_resource_name(self):
+    for record in self:
+      # Verificamos que exista la referencia y que el registro referenciado no haya sido borrado
+      if record.reservable_ref and record.reservable_ref.exists():
+        record.resource_name = record.reservable_ref.display_name
+      else:
+        record.resource_name = _("Sin recurso")

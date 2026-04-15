@@ -51,7 +51,11 @@
             <page string="Recursos Asociados">
             <!-- <field name="resource_ids" widget="many2many"/> -->
               <field name="resource_ids">
-               
+               <list editable="bottom">
+                  <field name="resource_name"/>
+                  <field name="reservable_model" column_invisible="False"/>
+                  <field name="reservable_id" column_invisible="False"/>
+                </list>
               </field>
             </page>
           </notebook>

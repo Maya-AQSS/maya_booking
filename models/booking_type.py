@@ -22,7 +22,7 @@ class BookingType(models.Model):
         default='S') 
     published = fields.Boolean(_('Publicado'), default=False)
 
-    resource_ids = fields.One2many('maya_booking.booking_resource', 'type_id',
+    resource_ids = fields.Many2many('maya_booking.booking_resource', string='Recursos asociados', help='Recursos asociados a este tipo de reserva',
                                      domain="[('reservable_model', '=', resource_model)]"  )
     
     resource_count = fields.Integer(
