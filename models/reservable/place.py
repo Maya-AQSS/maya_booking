@@ -9,10 +9,10 @@ class Place(models.Model):
   @api.depends('name', 'location_id')
   def _compute_display_name(self):
     for record in self:
-      if record:
-        record.display_name = record.name + " - [" + record.location_id.name + "]"
+      if record == False or record.name == False or record.location_id == False:
+        record.display_name = ""
       else:
-        record.display_name = _("Sin recurso")
+        record.display_name = record.name + " - [" + record.location_id.name + "]"
 
 
   def unlink(self):
