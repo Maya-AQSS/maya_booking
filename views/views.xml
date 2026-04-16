@@ -82,6 +82,16 @@
     </field>
   </record>
 
+  <record id="maya_booking.view_booking_resource_list" model="ir.ui.view">
+    <field name="name">maya_booking.booking_resource.list</field>
+      <field name="model">maya_booking.booking_resource</field>
+      <field name="arch" type="xml">
+      <list>
+        <field name="resource_name" />
+      </list>
+    </field>
+  </record>
+
     <record id="view_booking_form" model="ir.ui.view">
         <field name="name">maya_booking.booking.form</field>
         <field name="model">maya_booking.booking</field>
