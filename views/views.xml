@@ -64,6 +64,7 @@
     </field>
   </record>
 
+ <!-- View de place (añadido) --> 
   <record model="ir.ui.view" id="maya_booking.view_place_form_inherit">
     <field name="name">Formulario espacios. Añade reservas</field>
     <field name="model">maya_core.place</field>
@@ -75,13 +76,14 @@
             <field name="bookable" widget="boolean_toggle"/>
             <field name="num_max_session_consecutive"/>
             <field name="max_days_in_advance"/>
-            <field name="booking_limit_date"/>
+            <field name="last_reservation_date"/>
           </group>
         </page>
       </xpath>
     </field>
   </record>
 
+  <!-- View de Booking_resource --> 
   <record id="maya_booking.view_booking_resource_list" model="ir.ui.view">
     <field name="name">maya_booking.booking_resource.list</field>
       <field name="model">maya_booking.booking_resource</field>
@@ -106,17 +108,21 @@
                     </div>
                     <group>
                         <group string="Detalles del Recurso">
-                           <!--  <field name="resource_id" options="{'no_create': True}"/> -->
+                            <field name="booking_resource_id" options="{'no_create': True}"/>
                             <field name="user_id"/>
                         </group>
                         <group string="Selección de Horario">
                             <field name="booking_date"/>
-                            <field name="available_schedule_ids" invisible="1"/>
-                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/>
-                            <field name="session_count"/>
+                         <!--    <field name="available_schedule_ids" invisible="1"/>
+                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/> -->
+
+                            <field name="session_ids" 
+       widget="many2many_checkboxes" 
+       options="{'no_create': True}"/>
+                            <!-- <field name="session_count"/> -->
                             
-                            <field name="date_start" force_save="1" readonly="1"/>
-                            <field name="date_stop" force_save="1" readonly="1"/>
+                     <!--        <field name="date_start" force_save="1" readonly="1"/>
+                            <field name="date_stop" force_save="1" readonly="1"/> -->
                         </group>
                     </group>
                 </sheet>
@@ -127,18 +133,19 @@
     <record id="maya_booking.view_booking_timeline" model="ir.ui.view">
       <field name="name">maya_booking.booking.timeline</field>
       <field name="model">maya_booking.booking</field>
-       <!-- default_group_by="resource_id" -->
       <field name="arch" type="xml">
         <timeline date_start="date_start" 
                     date_stop="date_stop" 
-                   
+                    default_group_by="booking_resource_id"
+                    group_model="maya_booking.booking_resource"
                     event_open_popup="true"
                     zoomKey="ctrlKey"
                     mode="week"
+    
                     colors="#FF7F7F: user_id != false;"> 
             
           <field name="name"/>
-        <!--   <field name="resource_id"/> -->
+          <field name="booking_resource_id"/>
           <field name="user_id"/>
 
           <templates>

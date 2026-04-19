@@ -13,51 +13,149 @@ class Booking(models.Model):
 
     name = fields.Char(string=_("Motivo / Descripción"), required=True)
     
-    """  resource_id = fields.Many2one(
-        comodel_name='maya_booking.booking_type_resource', 
+    booking_resource_id = fields.Many2one(
+        comodel_name='maya_booking.booking_resource', 
         string=_("Recurso a reservar"), 
         required=True
-    ) """
+    )
     
     user_id = fields.Many2one(
         comodel_name='res.users', 
-        string=_("Persona que reserva"), 
+        string=_("Usuario que reserva"), 
         default=lambda self: self.env.user,
         readonly=True
     )
 
     booking_date = fields.Date(
-        string=_("Fecha de Reserva"), 
+        string=_("Fecha de la reserva"), 
         required=True, 
         default=fields.Date.context_today
     )
     
-    available_schedule_ids = fields.Many2many(
+    """   available_schedule_ids = fields.Many2many(
         'maya_core.session_schedule',
         compute='_compute_available_schedules'
+    ) """
+
+    session_ids = fields.Many2many(
+        'maya_core.session_schedule',
+        'maya_booking_session_rel',
+        'booking_id',
+        'session_id',
+        string=_("Sesiones"),
+        help=_("Seleccione las sesiones consecutivas para su reserva.")
     )
 
-    schedule_id = fields.Many2one(
+    date_start = fields.Datetime(string=_("Inicio"), compute='_compute_dates', store=True)
+    date_stop = fields.Datetime(string=_("Fin"), compute='_compute_dates', store=True) 
+
+    @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
+    def _onchange_filter_sessions(self):
+      """
+      Filtra sesiones por:
+      1. Día de la semana y ubicación.
+      2. Disponibilidad (que no estén ya reservadas por otros).
+      3. Continuidad (solo mostrar la siguiente a la última elegida).
+      """
+      if not self.booking_date or not self.booking_resource_id:
+        return {'domain': {'session_ids': [('id', '=', 0)]}}
+
+      # 1. Filtro básico: Día y Ubicación
+      weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+      day_code = weekday_map.get(self.booking_date.weekday())
+      
+      if not day_code:
+        return {'domain': {'session_ids': [('id', '=', 0)]}}
+
+      location_id = self.booking_resource_id.reservable_ref.location_id.id
+      
+      # Base del dominio
+      domain = [
+          ('week_day', '=', day_code),
+          ('location_id', '=', location_id),
+          ('active', '=', True)
+      ]
+
+      # 2. Excluir sesiones ya reservadas por otros en esa fecha
+      # Buscamos reservas confirmadas para este recurso y fecha
+      existing_bookings = self.env['maya_booking.booking'].search([
+          ('booking_date', '=', self.booking_date),
+          ('booking_resource_id', '=', self.booking_resource_id.id),
+          ('id', '!=', self._origin.id if self._origin else False) # Ignorar la reserva actual
+      ])
+      
+      booked_session_ids = existing_bookings.mapped('session_ids').ids
+      if booked_session_ids:
+          domain.append(('id', 'not in', booked_session_ids))
+
+      # 3. Lógica de "Posteriores y Consecutivas"
+      if self.session_ids:
+          # Obtenemos la hora de fin de la sesión más tardía seleccionada
+          last_end_time = max(self.session_ids.mapped('end_time'))
+          
+          # Filtramos para que SOLO aparezca la sesión que empieza justo donde acaba la anterior
+          # Esto obliga a que la selección sea perfectamente encadenada
+          domain.append(('start_time', '=', last_end_time))
+      
+      return {'domain': {'session_ids': domain}}
+
+    @api.depends('booking_date', 'session_ids.start_time', 'session_ids.end_time')
+    def _compute_dates(self):
+      """
+      Calcula el inicio de la primera sesión y el fin de la última
+      combinándolos con la fecha de la reserva.
+      """
+      for record in self:
+        if record.booking_date and record.session_ids:
+          # 1. Obtener los extremos de las sesiones seleccionadas
+          # Usamos min y max sobre el conjunto de sesiones vinculadas
+          start_hour = min(record.session_ids.mapped('start_time'))
+          end_hour = max(record.session_ids.mapped('end_time'))
+
+          # 2. Helper para convertir Float (9.5) a Datetime
+          record.date_start = self._combine_date_and_float(record.booking_date, start_hour)
+          record.date_stop = self._combine_date_and_float(record.booking_date, end_hour)
+        else:
+          record.date_start = False
+          record.date_stop = False
+
+    def _combine_date_and_float(self, base_date, float_time):
+      """
+      Convierte una fecha y una hora float en un objeto Datetime.
+      Ejemplo: 2026-04-17 + 9.5 -> 2026-04-17 09:30:00
+      """
+      # Extraer horas y minutos del float (ej: 9.75 -> 9 horas, 0.75 * 60 = 45 min)
+      hours = int(float_time)
+      minutes = int(round((float_time - hours) * 60))
+      
+      # Combinar con la fecha base
+      return datetime.combine(base_date, datetime.min.time()).replace(
+          hour=hours, minute=minutes
+      )
+    
+    """ schedule_ids = fields.Many2many(
         'maya_core.session_schedule', 
-        string=_("Sesión de Inicio"), 
+        string=_("Sesiones"), 
         required=True,
         domain="[('id', 'in', available_schedule_ids)]"
-    )
+    ) """
     
-    session_count = fields.Integer(string=_("Nº de Sesiones Consecutivas"), default=1, required=True)
+    """ session_count = fields.Integer(string=_("Nº de Sesiones Consecutivas"), default=1, required=True)
     
-    date_start = fields.Datetime(string=_("Fecha/Hora Inicio"), compute='_compute_dates', store=True)
-    date_stop = fields.Datetime(string=_("Fecha/Hora Fin"), compute='_compute_dates', store=True)
+    date_start = fields.Datetime(string=_("Fecha y hora inicio"), compute='_compute_dates', store=True)
+    date_stop = fields.Datetime(string=_("Fecha y hora fin"), compute='_compute_dates', store=True) """
 
-    # @api.depends('booking_date', 'resource_id')
+    """
+    @api.depends('booking_date', 'booking_resource_id')
     def _compute_available_schedules(self):
-      """
+    
       Busca las sesiones configuradas para ese recurso y ese día de la semana
-      """
-      day_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V'}
+    
+
+      day_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
       for record in self:
-        if record.booking_date and record.resource_id:
-          place = self.env['maya_core.place'].browse(record.resource_id.reservable_id)
+        if record.booking_date and record.booking_resource_id:
+          place = self.env['maya_core.place'].browse(record.booking_resource_id.reservable_id)
           weekday_str = day_map.get(record.booking_date.weekday())
                 
           if weekday_str:
@@ -70,54 +168,15 @@ class Booking(models.Model):
 
     @api.onchange('booking_date', 'resource_id')
     def _onchange_clear_schedule(self):
-      """
+      
       Si cambian el día o el recurso, reseteamos la sesión para evitar errores
-      """
+      
       self.schedule_id = False
 
-    @api.depends('booking_date', 'schedule_id', 'session_count')
-    def _compute_dates(self):
-      """
-      Calcula las horas exactas de inicio y fin basándose en el horario oficial
-      """
-      day_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V'}
-      user_tz = pytz.timezone(self.env.user.tz or 'UTC')
-        
-      for record in self:
-        if not record.booking_date or not record.schedule_id:
-          record.date_start = False
-          record.date_stop = False
-          continue
-        
-        # Calcular Fecha Inicio (Unimos la Fecha con la Hora del Schedule)
-        start_h = int(record.schedule_id.start_time)
-        start_m = int(round((record.schedule_id.start_time - start_h) * 60))
-        
-        dt_start_naive = datetime.combine(record.booking_date, datetime.min.time()).replace(hour=start_h, minute=start_m)
-        dt_start_local = user_tz.localize(dt_start_naive)
-        record.date_start = dt_start_local.astimezone(pytz.UTC).replace(tzinfo=None)
-        
-        # Calcular Fecha Fin sumando sesiones consecutivas
-        place = self.env['maya_core.place'].browse(record.resource_id.reservable_id)
-        weekday_str = day_map.get(record.booking_date.weekday())
-        schedules = place.session_schedule_ids.filtered(lambda s: s.week_day == weekday_str).sorted('start_time')
-        
-        start_idx = schedules.ids.index(record.schedule_id.id) if record.schedule_id.id in schedules.ids else -1
-        
-        if start_idx != -1:
-          end_idx = min(start_idx + record.session_count - 1, len(schedules) - 1)
-          end_float = schedules[end_idx].end_time
-          end_h = int(end_float)
-          end_m = int(round((end_float - end_h) * 60))
-            
-          dt_end_naive = datetime.combine(record.booking_date, datetime.min.time()).replace(hour=end_h, minute=end_m)
-          dt_end_local = user_tz.localize(dt_end_naive)
-          record.date_stop = dt_end_local.astimezone(pytz.UTC).replace(tzinfo=None)
-        else:
-            record.date_stop = record.date_start + timedelta(hours=1)
+     """
 
     # Bloqueo de solapamientos real en BD
-    @api.constrains('date_start', 'date_stop', 'resource_id')
+    """  @api.constrains('date_start', 'date_stop', 'resource_id')
     def _check_overlap(self):
       for record in self:
         if not record.date_start or not record.date_stop:
@@ -130,4 +189,4 @@ class Booking(models.Model):
             ('date_stop', '>', record.date_start)
         ]
         if self.search_count(domain) > 0:
-          raise ValidationError(_("¡Error! Ya existe una reserva para este recurso en ese horario."))
+          raise ValidationError(_("¡Error! Ya existe una reserva para este recurso en ese horario.")) """

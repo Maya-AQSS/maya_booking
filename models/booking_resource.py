@@ -26,7 +26,7 @@ class BookingResource(models.Model):
     store=True
   )
   
-  resource_name = fields.Char(string="Descripción del recurso", compute="_compute_resource_name")
+  resource_name = fields.Char(string="Descripción del recurso", compute="_compute_resource_name", store = True)
 
   @api.model
   def _get_reservable_models(self):

@@ -21,8 +21,10 @@ class ReservableMixin(models.AbstractModel):
 
     max_days_in_advance = fields.Integer(string='Reserva con antelación (días)', 
                                          help="Máximos días de antelación con los que se puede realizar una reserva. 0: sin límite", default=15)
-    
-    booking_limit_date = fields.Date(string='Fecha límite de reserva')
+
+    # cada vez que se añada una reserva debe actualizarse
+    # es útil para gestionar las reservas en caso de que el recurso pase a ser no reservable
+    last_reservation_date = fields.Datetime(string=_('Última reserva')) 
 
     session_schedule_ids = fields.Many2many(
         "maya_core.session_schedule",
@@ -31,77 +33,3 @@ class ReservableMixin(models.AbstractModel):
     )
 
     display_name = fields.Char(string="Descripción", compute="_compute_display_name")
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        for record in records:
-            record._sync_resource()
-        return records
-    
-    def write(self, vals):
-        if 'bookable' in vals and vals.get('bookable') == False:
-            for record in self:
-                if record._has_active_bookings():
-                    raise ValidationError('No se puede desmarcar porque tiene reservas activas')
-        
-        result = super().write(vals)
-        
-        if 'bookable' in vals:
-            for record in self:
-                record._sync_resource()
-        
-        return result
-    
-    def _sync_resource(self):
-        Resource = self.env['maya_booking.resource']
-        
-        existing = Resource.search([
-            ('model_name', '=', self._name),
-            ('res_id', '=', self.id)
-        ], limit=1)
-        
-        if self.bookable:
-            valores = {
-                'name': self.name,
-                'model_name': self._name,
-                'res_id': self.id,
-                'bookable': True,
-                'booking_limit_date': self.booking_limit_date,
-            }
-            if existing:
-                existing.write(valores)
-            else:
-                Resource.create(valores)
-        else:
-            if existing:
-                if self._has_active_bookings():
-                    existing.write({
-                        'bookable': False,
-                        'last_reservation_date': fields.Datetime.now()
-                    })
-                else:
-                    existing.unlink()
-    
-    def _has_active_bookings(self):
-        resource = self.env['maya_booking.resource'].search([
-            ('model_name', '=', self._name),
-            ('res_id', '=', self.id)
-        ], limit=1)
-        
-        if not resource:
-            return False
-        
-        reservas = self.env['maya_booking.booking'].search_count([
-            ('resource_id', '=', resource.id),
-            ('state', 'in', ['draft', 'confirmed', 'in_progress'])
-        ])
-        
-        return reservas > 0
-    
-    @api.constrains('resource_type')
-    def _check_resource_type(self):
-        for record in self:
-            tipos_validos = ['E', 'S', 'W', 'I']
-            if record.resource_type not in tipos_validos:
-                raise ValidationError('Tipo de recurso no válido')

@@ -35,11 +35,11 @@ class BookingType(models.Model):
         string=_('Modelo de recurso'),
     )
 
-    bookable_resource_ids = fields.Many2many(
+    """ bookable_resource_ids = fields.Many2many(
         'maya_booking.resource',
         string=_('Recursos disponibles'),
         domain="[('model_name', '=', resource_model)]"  
-    )
+    ) """
 
     # computed para mostrar cuántos recursos tiene asociados
     resource_count = fields.Integer(compute='_compute_resource_count')  
@@ -60,7 +60,7 @@ class BookingType(models.Model):
       for record in self:
         record.resource_model = modelo_map.get(record.resource_type, '')
     
-    @api.constrains('bookable_resource_ids')
+    """ @api.constrains('bookable_resource_ids')
     def _check_same_model(self):
       for record in self:
         if record.bookable_resource_ids:
@@ -69,7 +69,7 @@ class BookingType(models.Model):
             raise ValidationError(
                 _('No se pueden mezclar diferentes tipos de recursos. '
                   'Todos los recursos deben ser del mismo modelo.')
-            ) 
+            )  """
 
     def action_open_timeline(self):
       """
@@ -82,7 +82,10 @@ class BookingType(models.Model):
         'type': 'ir.actions.act_window',
         'res_model': 'maya_booking.booking', 
         'view_mode': 'timeline,list,form',
-        #filtro para mostrar solo las reservas de este tipo de recurso
-        'domain': [('resource_id.type_id', '=', self.id)],
-        'context': {}
+        # filtro para mostrar solo las reservas de este tipo de recurso
+        'domain': [('booking_resource_id.booking_type_ids.resource_type', '=', self.resource_type)],
+        'context': {
+            # incluyo una variable en el contexto para poder filtrar los recursos de tipo de reserva seleccionado
+            'timeline_booking_type_id': self.id,  
+        }
       }
