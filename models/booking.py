@@ -11,7 +11,19 @@ class Booking(models.Model):
     _name = 'maya_booking.booking'
     _description = _('Reservas')
 
-    name = fields.Char(string=_("Motivo / Descripción"), required=True)
+    name = fields.Char(string=_("Motivo / Descripción"))
+
+    reason =  fields.Selection(
+       [('TC', _('Tutoria colectiva')),     
+        ('TI', _('Tutoria individual')),    
+        ('R', _('Reunión')),     
+        ('EX', _('Examen')),
+        ('O', _('Otros')) ],
+        string=_("Motivo"),  
+        default='TI', required=True) 
+    
+    description =  fields.Text(_('Descripción'), 
+                               help=_('Asignatura y estudios, descripción detallada de la reunión, etc.'))
     
     booking_resource_id = fields.Many2one(
         comodel_name='maya_booking.booking_resource', 
@@ -21,21 +33,18 @@ class Booking(models.Model):
     
     user_id = fields.Many2one(
         comodel_name='res.users', 
-        string=_("Usuario que reserva"), 
+        string=_("Usuario"), 
+        help=_("Usuario que reserva"), 
         default=lambda self: self.env.user,
         readonly=True
     )
 
     booking_date = fields.Date(
-        string=_("Fecha de la reserva"), 
+        string=_("Fecha"), 
+        help=_("Fecha de la reserva"),
         required=True, 
         default=fields.Date.context_today
     )
-    
-    """   available_schedule_ids = fields.Many2many(
-        'maya_core.session_schedule',
-        compute='_compute_available_schedules'
-    ) """
 
     session_ids = fields.Many2many(
         'maya_core.session_schedule',
@@ -48,6 +57,8 @@ class Booking(models.Model):
 
     date_start = fields.Datetime(string=_("Inicio"), compute='_compute_dates', store=True)
     date_stop = fields.Datetime(string=_("Fin"), compute='_compute_dates', store=True) 
+
+    resource_name = fields.Char(_('Recurso'), related="booking_resource_id.resource_name")
 
     @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
     def _onchange_filter_sessions(self):
@@ -133,60 +144,38 @@ class Booking(models.Model):
           hour=hours, minute=minutes
       )
     
-    """ schedule_ids = fields.Many2many(
-        'maya_core.session_schedule', 
-        string=_("Sesiones"), 
-        required=True,
-        domain="[('id', 'in', available_schedule_ids)]"
-    ) """
-    
-    """ session_count = fields.Integer(string=_("Nº de Sesiones Consecutivas"), default=1, required=True)
-    
-    date_start = fields.Datetime(string=_("Fecha y hora inicio"), compute='_compute_dates', store=True)
-    date_stop = fields.Datetime(string=_("Fecha y hora fin"), compute='_compute_dates', store=True) """
+    @api.model
+    def get_sessions_for_slot(self, resource_id, date_str, start_float, end_float):
+      """
+      Dado un recurso, fecha y rango horario (floats),
+      devuelve las sesiones que cubren ese rango.
+      Usado desde el timeline JS para pre-rellenar el formulario.
+      """
+      from datetime import date as date_type
 
-    """
-    @api.depends('booking_date', 'booking_resource_id')
-    def _compute_available_schedules(self):
-    
-      Busca las sesiones configuradas para ese recurso y ese día de la semana
-    
+      # Convertir fecha string a date
+      booking_date = fields.Date.from_string(date_str)
 
-      day_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
-      for record in self:
-        if record.booking_date and record.booking_resource_id:
-          place = self.env['maya_core.place'].browse(record.booking_resource_id.reservable_id)
-          weekday_str = day_map.get(record.booking_date.weekday())
-                
-          if weekday_str:
-            schedules = place.session_schedule_ids.filtered(lambda s: s.week_day == weekday_str)
-            record.available_schedule_ids = schedules
-          else:
-            record.available_schedule_ids = False
-        else:
-            record.available_schedule_ids = False
+      # Día de la semana
+      weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+      day_code = weekday_map.get(booking_date.weekday())
+      if not day_code:
+          return []
 
-    @api.onchange('booking_date', 'resource_id')
-    def _onchange_clear_schedule(self):
-      
-      Si cambian el día o el recurso, reseteamos la sesión para evitar errores
-      
-      self.schedule_id = False
+      # Obtener location del recurso
+      resource = self.env['maya_booking.booking_resource'].browse(resource_id)
+      if not resource or not resource.reservable_ref:
+          return []
 
-     """
+      location_id = resource.reservable_ref.location_id.id
 
-    # Bloqueo de solapamientos real en BD
-    """  @api.constrains('date_start', 'date_stop', 'resource_id')
-    def _check_overlap(self):
-      for record in self:
-        if not record.date_start or not record.date_stop:
-          continue
-        
-        domain = [
-            ('id', '!=', record.id),
-            ('resource_id', '=', record.resource_id.id),
-            ('date_start', '<', record.date_stop),
-            ('date_stop', '>', record.date_start)
-        ]
-        if self.search_count(domain) > 0:
-          raise ValidationError(_("¡Error! Ya existe una reserva para este recurso en ese horario.")) """
+      # Buscar sesiones que solapen con el rango seleccionado
+      sessions = self.env['maya_core.session_schedule'].search([
+          ('week_day', '=', day_code),
+          ('location_id', '=', location_id),
+          ('active', '=', True),
+          ('start_time', '<', end_float),    # empieza antes del fin del slot
+          ('end_time', '>', start_float),    # termina después del inicio del slot
+      ], order='start_time asc')
+
+      return sessions.ids

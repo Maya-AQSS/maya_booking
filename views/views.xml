@@ -50,8 +50,8 @@
           <notebook>
             <page string="Recursos Asociados">
             <!-- <field name="resource_ids" widget="many2many"/> -->
-              <field name="resource_ids">
-               <list editable="bottom">
+              <field name="resource_ids" options="{'no_create': True}">
+                <list editable="bottom">
                   <field name="resource_name"/>
                   <field name="reservable_model" column_invisible="False"/>
                   <field name="reservable_id" column_invisible="False"/>
@@ -94,79 +94,91 @@
     </field>
   </record>
 
-    <record id="view_booking_form" model="ir.ui.view">
-        <field name="name">maya_booking.booking.form</field>
-        <field name="model">maya_booking.booking</field>
-        <field name="arch" type="xml">
-            <form string="Reserva">
-                <sheet>
-                    <div class="oe_title">
-                        <label for="name" string="Motivo / Descripción"/>
-                        <h1>
-                            <field name="name" placeholder="Ej: Reunión de departamento..." required="1"/>
-                        </h1>
-                    </div>
-                    <group>
-                        <group string="Detalles del Recurso">
-                            <field name="booking_resource_id" options="{'no_create': True}"/>
-                            <field name="user_id"/>
-                        </group>
-                        <group string="Selección de Horario">
-                            <field name="booking_date"/>
-                         <!--    <field name="available_schedule_ids" invisible="1"/>
-                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/> -->
+  <!-- View de Booking --> 
+  <record id="maya_booking.view_booking_form" model="ir.ui.view">
+    <field name="name">maya_booking.booking.form</field>
+    <field name="model">maya_booking.booking</field>
+    <field name="arch" type="xml">
+      <form string="Reserva">
+        <group>
+          <field name="reason"/>
+          <field name="description" placeholder="Ej: Matemáticas, 2ª de Bachillerato..." required="1"/>    
+        </group>
+        <separator string="Detalles"/>
+          <group col="1" style="padding-left: 15px">
+            <group>
+              <div class="o_row">
+                <i class="fa fa-map-marker" title="Recurso" style="margin-right: 7px;"/><label for="resource_name"/>
+                <field name="resource_name" options="{'no_create': True}" nolabel="1" />
+              </div>
+            </group>
+            <group>
+              <div class="o_row">
+                <i class="fa fa-user" title="Usuario" style="margin-right: 7px;"/><label for="user_id"/>
+                <field name="user_id" nolabel="1" />
+              </div>
+            </group>
+          
+            <group>      
+              <div class="o_row">
+                <i class="fa fa-calendar" title="Fecha de reserva" style="margin-right: 7px;"/><label for="booking_date"/>
+                <field name="booking_date" nolabel="1" options="{'datepicker': {'format': 'DD/MM/YYYY'}}" />
+              </div>
+            </group>
+                
+                  <!--    <field name="available_schedule_ids" invisible="1"/>
+                    <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/> -->
 
-                            <field name="session_ids" 
-       widget="many2many_checkboxes" 
-       options="{'no_create': True}"/>
+          <field name="session_ids" widget="many2many" options="{'no_create': True}"/>
                             <!-- <field name="session_count"/> -->
                             
                      <!--        <field name="date_start" force_save="1" readonly="1"/>
                             <field name="date_stop" force_save="1" readonly="1"/> -->
-                        </group>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
 
-    <record id="maya_booking.view_booking_timeline" model="ir.ui.view">
-      <field name="name">maya_booking.booking.timeline</field>
-      <field name="model">maya_booking.booking</field>
-      <field name="arch" type="xml">
-        <timeline date_start="date_start" 
-                    date_stop="date_stop" 
-                    default_group_by="booking_resource_id"
-                    group_model="maya_booking.booking_resource"
-                    event_open_popup="true"
-                    zoomKey="ctrlKey"
-                    mode="week"
-    
-                    colors="#FF7F7F: user_id != false;"> 
-            
-          <field name="name"/>
-          <field name="booking_resource_id"/>
-          <field name="user_id"/>
+        </group>
 
-          <templates>
-            <t t-name="timeline-item">
-              <div class="o_timeline_item_content" style="padding: 2px;">
-                  <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
-              </div>
-            </t>
-          </templates>
-        </timeline>
+      </form>
       </field>
-    </record>
+  </record>
 
-    <record id="maya_booking.action_booking_type" model="ir.actions.act_window">
-      <field name="name">Tipos de reserva</field>
-      <field name="res_model">maya_booking.booking_type</field>
-      <field name="view_mode">kanban,form</field>
-    </record>
+  <!-- View de Booking:  Timeline --> 
+  <record id="maya_booking.view_booking_timeline" model="ir.ui.view">
+    <field name="name">maya_booking.booking.timeline</field>
+    <field name="model">maya_booking.booking</field>
+    <field name="arch" type="xml">
+      <timeline date_start="date_start" 
+                  date_stop="date_stop" 
+                  default_group_by="booking_resource_id"
+                  group_model="maya_booking.booking_resource"
+                  event_open_popup="true"
+                  zoomKey="ctrlKey"
+                  mode="week"
+  
+                  colors="#FF7F7F: user_id != false;"> 
+          
+        <field name="name"/>
+        <field name="booking_resource_id"/>
+        <field name="user_id"/>
 
-    <menuitem id="menu_maya_booking_root" name="Maya | Booking" sequence="10"/>
+        <templates>
+          <t t-name="timeline-item">
+            <div class="o_timeline_item_content" style="padding: 2px;">
+                <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
+            </div>
+          </t>
+        </templates>
+      </timeline>
+    </field>
+  </record>
 
-    <menuitem id="menu_booking_type" name="Tipos de Reserva" parent="menu_maya_booking_root" action="maya_booking.action_booking_type" sequence="10"/>
+  <record id="maya_booking.action_booking_type" model="ir.actions.act_window">
+    <field name="name">Tipos de reserva</field>
+    <field name="res_model">maya_booking.booking_type</field>
+    <field name="view_mode">kanban,form</field>
+  </record>
+
+  <menuitem id="menu_maya_booking_root" name="Maya | Booking" sequence="10"/>
+
+  <menuitem id="menu_booking_type" name="Tipos de Reserva" parent="menu_maya_booking_root" action="maya_booking.action_booking_type" sequence="10"/>
 
 </odoo>
