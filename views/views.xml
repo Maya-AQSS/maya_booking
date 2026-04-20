@@ -52,8 +52,8 @@
           <notebook>
             <page string="Recursos Asociados">
             <!-- <field name="resource_ids" widget="many2many"/> -->
-              <field name="resource_ids">
-               <list editable="bottom">
+              <field name="resource_ids" options="{'no_create': True}">
+                <list editable="bottom">
                   <field name="resource_name"/>
                   <field name="reservable_model" column_invisible="False"/>
                   <field name="reservable_id" column_invisible="False"/>
@@ -66,6 +66,7 @@
     </field>
   </record>
 
+ <!-- View de place (añadido) --> 
   <record model="ir.ui.view" id="maya_booking.view_place_form_inherit">
     <field name="name">Formulario espacios. Añade reservas</field>
     <field name="model">maya_core.place</field>
@@ -77,13 +78,14 @@
             <field name="bookable" widget="boolean_toggle"/>
             <field name="num_max_session_consecutive"/>
             <field name="max_days_in_advance"/>
-            <field name="booking_limit_date"/>
+            <field name="last_reservation_date"/>
           </group>
         </page>
       </xpath>
     </field>
   </record>
 
+  <!-- View de Booking_resource --> 
   <record id="maya_booking.view_booking_resource_list" model="ir.ui.view">
     <field name="name">maya_booking.booking_resource.list</field>
       <field name="model">maya_booking.booking_resource</field>
@@ -94,149 +96,160 @@
     </field>
   </record>
 
-    <record id="view_booking_form" model="ir.ui.view">
-        <field name="name">maya_booking.booking.form</field>
-        <field name="model">maya_booking.booking</field>
-        <field name="arch" type="xml">
-            <form string="Reserva">
-                <sheet>
-                    <div class="oe_title">
-                        <label for="name" string="Motivo / Descripción"/>
-                        <h1>
-                            <field name="name" placeholder="Ej: Reunión de departamento..." required="1"/>
-                        </h1>
-                    </div>
-                    <group>
-                        <group string="Detalles del Recurso">
-                           <!--  <field name="resource_id" options="{'no_create': True}"/> -->
-                            <field name="user_id"/>
-                        </group>
-                        <group string="Selección de Horario">
-                            <field name="booking_date"/>
-                            <field name="available_schedule_ids" invisible="1"/>
-                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/>
-                            <field name="session_count"/>
-                            
-                            <field name="date_start" force_save="1" readonly="1"/>
-                            <field name="date_stop" force_save="1" readonly="1"/>
-                        </group>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="maya_booking.view_booking_timeline" model="ir.ui.view">
-      <field name="name">maya_booking.booking.timeline</field>
-      <field name="model">maya_booking.booking</field>
-       <!-- default_group_by="resource_id" -->
-      <field name="arch" type="xml">
-        <timeline date_start="date_start" 
-                    date_stop="date_stop" 
-                   
-                    event_open_popup="true"
-                    zoomKey="ctrlKey"
-                    mode="week"
-                    colors="#FF7F7F: user_id != false;"> 
-            
-          <field name="name"/>
-        <!--   <field name="resource_id"/> -->
-          <field name="user_id"/>
-
-          <templates>
-            <t t-name="timeline-item">
-              <div class="o_timeline_item_content" style="padding: 2px;">
-                  <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
+  <!-- View de Booking --> 
+  <record id="maya_booking.view_booking_form" model="ir.ui.view">
+    <field name="name">maya_booking.booking.form</field>
+    <field name="model">maya_booking.booking</field>
+    <field name="arch" type="xml">
+      <form string="Reserva">
+        <group>
+          <field name="reason"/>
+          <field name="description" placeholder="Ej: Matemáticas, 2ª de Bachillerato..." required="1"/>    
+        </group>
+        <separator string="Detalles"/>
+          <group col="1" style="padding-left: 15px">
+            <group>
+              <div class="o_row">
+                <i class="fa fa-map-marker" title="Recurso" style="margin-right: 7px;"/><label for="resource_name"/>
+                <field name="resource_name" options="{'no_create': True}" nolabel="1" />
               </div>
-            </t>
-          </templates>
-        </timeline>
-      </field>
-    </record>
-
-<record id="view_place_form_inherit_booking" model="ir.ui.view">
-        <field name="name">maya_core.place.form.inherit.booking</field>
-        <field name="model">maya_core.place</field>
-        <field name="inherit_id" ref="maya_core.view_place_form"/>
-        <field name="arch" type="xml">
-            
-            <xpath expr="//notebook" position="inside">
+            </group>
+            <group>
+              <div class="o_row">
+                <i class="fa fa-user" title="Usuario" style="margin-right: 7px;"/><label for="user_id"/>
+                <field name="user_id" nolabel="1" />
+              </div>
+            </group>
+          
+            <group>      
+              <div class="o_row">
+                <i class="fa fa-calendar" title="Fecha de reserva" style="margin-right: 7px;"/><label for="booking_date"/>
+                <field name="booking_date" nolabel="1" options="{'datepicker': {'format': 'DD/MM/YYYY'}}" />
+              </div>
+            </group>
                 
-                <page string="Asignar Sesiones">
-                    <field name="session_schedule_ids" domain="[('location_id', '=', location_id)]"/>
-                </page>
+                  <!--    <field name="available_schedule_ids" invisible="1"/>
+                    <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/> -->
 
-                <page string="Sesiones Disponibles">
-                    <field name="availability_grid_html" readonly="1" nolabel="1"/>
-                </page>
+          <field name="session_ids" widget="many2many" options="{'no_create': True}"/>
+                            <!-- <field name="session_count"/> -->
+                            
+                     <!--        <field name="date_start" force_save="1" readonly="1"/>
+                            <field name="date_stop" force_save="1" readonly="1"/> -->
 
-            </xpath>
+        </group>
 
-        </field>
-    </record>
+      </form>
+      </field>
+  </record>
+
+  <!-- View de Booking:  Timeline --> 
+  <record id="maya_booking.view_booking_timeline" model="ir.ui.view">
+    <field name="name">maya_booking.booking.timeline</field>
+    <field name="model">maya_booking.booking</field>
+    <field name="arch" type="xml">
+      <timeline date_start="date_start" 
+                  date_stop="date_stop" 
+                  default_group_by="booking_resource_id"
+                  group_model="maya_booking.booking_resource"
+                  event_open_popup="true"
+                  zoomKey="ctrlKey"
+                  mode="week"
+  
+                  colors="#FF7F7F: user_id != false;"> 
+          
+        <field name="name"/>
+        <field name="booking_resource_id"/>
+        <field name="user_id"/>
+
+        <templates>
+          <t t-name="timeline-item">
+            <div class="o_timeline_item_content" style="padding: 2px;">
+                <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
+            </div>
+          </t>
+        </templates>
+      </timeline>
+    </field>
+  </record>
+  
+  <record id="maya_booking.view_place_form_inherit_booking" model="ir.ui.view">
+    <field name="name">Formulario espacios. Añade sesiones reservas</field>
+    <field name="model">maya_core.place</field>
+    <field name="inherit_id" ref="maya_core.view_place_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="Asignar Sesiones">
+           <field name="session_schedule_ids" domain="[('location_id', '=', location_id)]"/>
+         </page>
+         <page string="Sesiones Disponibles">
+           <field name="availability_grid_html" readonly="1" nolabel="1"/>
+         </page>
+       </xpath>
+     </field>
+   </record>
 
     <template id="template_cuadrante_horarios" name="Cuadrante de Horarios">
-        <div style="max-width: 90%; margin-right: auto;">
-            <table class="table table-bordered text-center mb-0" style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px;">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="py-2 text-uppercase text-muted" style="font-size: 0.8em; border: none; width: 140px;">Horario</th>
-                        
-                        <t t-foreach="days" t-as="day">
-                            <th class="py-2 text-uppercase text-muted" style="font-size: 0.8em; border: none;" t-esc="day_names[day]"/>
+      <div style="max-width: 90%; margin-right: auto;">
+      <table class="table table-bordered text-center mb-0" style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px;">
+         <thead class="bg-light">
+           <tr>
+             <th class="py-2 text-uppercase text-muted" style="font-size: 0.8em; border: none; width: 140px;">Horario</th>
+                <t t-foreach="days" t-as="day">
+                    <th class="py-2 text-uppercase text-muted" style="font-size: 0.8em; border: none;" t-esc="day_names[day]"/>
+                </t>
+            </tr>
+         </thead>
+         <tbody>
+           <tr>
+             <td style="vertical-align: top; background-color: #ffffff; border: none; padding: 8px;">
+               <t t-set="ref_schedules" t-value="schedules_by_day[days[0]]"/>
+               <t t-if="ref_schedules">
+                 <t t-foreach="ref_schedules" t-as="rs">
+                   <div class="card mb-2 border-0 shadow-none bg-transparent">
+                      <div class="card-body p-2 d-flex align-items-center justify-content-center" style="min-height: 42px;">
+                        <strong class="text-muted" style="font-size: 0.85em;" t-esc="rs.get('time_str', '')"/>
+                    </div>
+                  </div>
+                 </t>
+               </t>
+             </td>
+
+            <t t-foreach="days" t-as="day">
+                <td style="vertical-align: top; background-color: #f8f9fa; border: none; border-radius: 4px; padding: 8px;">
+                    <t t-set="day_schedules" t-value="schedules_by_day[day]"/>
+
+                    <t t-if="not day_schedules">
+                        <small class="text-black-50" style="font-size: 0.7em;">Sin sesiones en edificio</small>
+                    </t>
+                    <t t-else=""> 
+                        <t t-foreach="day_schedules" t-as="s">
+                            <t t-set="card_style" t-value="'background-color: #8abc8c; color: white;' if s['is_assigned'] else 'background-color: #e9ecef; color: #6c757d; opacity: 0.6;'"/>
+                            <t t-set="border_style" t-value="'border-left: 4px solid #1e7e34;' if s['is_assigned'] else 'border-left: 4px solid #dee2e6;'"/>
+
+                            <div t-att-style="card_style + border_style" class="card mb-2 border-0 shadow-sm">
+                                <div class="card-body p-2 d-flex align-items-center justify-content-center" style="min-height: 42px;">
+                                    <strong class="d-block" style="font-size: 0.85em;" t-esc="s['name']"/>
+                                </div>
+                            </div>
                         </t>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="vertical-align: top; background-color: #ffffff; border: none; padding: 8px;">
-                            <t t-set="ref_schedules" t-value="schedules_by_day[days[0]]"/>
-                            <t t-if="ref_schedules">
-                                <t t-foreach="ref_schedules" t-as="rs">
-                                    <div class="card mb-2 border-0 shadow-none bg-transparent">
-                                        <div class="card-body p-2 d-flex align-items-center justify-content-center" style="min-height: 42px;">
-                                            <strong class="text-muted" style="font-size: 0.85em;" t-esc="rs.get('time_str', '')"/>
-                                        </div>
-                                    </div>
-                                </t>
-                            </t>
-                        </td>
+                    </t>
+                </td>
+            </t>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </template>
 
-                        <t t-foreach="days" t-as="day">
-                            <td style="vertical-align: top; background-color: #f8f9fa; border: none; border-radius: 4px; padding: 8px;">
-                                <t t-set="day_schedules" t-value="schedules_by_day[day]"/>
-                                
-                                <t t-if="not day_schedules">
-                                    <small class="text-black-50" style="font-size: 0.7em;">Sin sesiones en edificio</small>
-                                </t>
-                                <t t-else=""> 
-                                    <t t-foreach="day_schedules" t-as="s">
-                                        <t t-set="card_style" t-value="'background-color: #8abc8c; color: white;' if s['is_assigned'] else 'background-color: #e9ecef; color: #6c757d; opacity: 0.6;'"/>
-                                        <t t-set="border_style" t-value="'border-left: 4px solid #1e7e34;' if s['is_assigned'] else 'border-left: 4px solid #dee2e6;'"/>
-                                        
-                                        <div t-att-style="card_style + border_style" class="card mb-2 border-0 shadow-sm">
-                                            <div class="card-body p-2 d-flex align-items-center justify-content-center" style="min-height: 42px;">
-                                                <strong class="d-block" style="font-size: 0.85em;" t-esc="s['name']"/>
-                                            </div>
-                                        </div>
-                                    </t>
-                                </t>
-                            </td>
-                        </t>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </template>
+  <record id="maya_booking.action_booking_type" model="ir.actions.act_window">
+    <field name="name">Tipos de reserva</field>
+    <field name="res_model">maya_booking.booking_type</field>
+    <field name="view_mode">kanban,form</field>
+  </record>
 
-    <record id="maya_booking.action_booking_type" model="ir.actions.act_window">
-      <field name="name">Tipos de reserva</field>
-      <field name="res_model">maya_booking.booking_type</field>
-      <field name="view_mode">kanban,form</field>
-    </record>
+  <menuitem id="menu_maya_booking_root" name="Maya | Booking" sequence="10"/>
 
-    <menuitem id="menu_maya_booking_root" name="Maya | Booking" sequence="10"/>
-
-    <menuitem id="menu_booking_type" name="Tipos de Reserva" parent="menu_maya_booking_root" action="maya_booking.action_booking_type" sequence="10"/>
+  <menuitem id="menu_booking_type" name="Tipos de Reserva" parent="menu_maya_booking_root" action="maya_booking.action_booking_type" sequence="10"/>
 
 </odoo>

@@ -2,36 +2,31 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 class Place(models.Model):
-    _name = 'maya_core.place'
-    _inherit = ['maya_core.place', 'maya_booking.reservable.mixin']
+  _name = 'maya_core.place'
+  _inherit = ['maya_core.place', 'maya_booking.reservable.mixin']
 
-    @api.depends('name', 'location_id')
-    def _compute_display_name(self):
-        for record in self:
-            if not record.name:
-                record.display_name = _("Sin recurso")
-            elif not record.location_id:
-                record.display_name = record.name
-            else:
-                record.display_name = f"{record.name} - [{record.location_id.name}]"
-
-    def unlink(self):
-        for record in self:
-            reservas = self.env["maya_booking.booking"].search_count(
-                [("place_id", "=", record.id)]
-            )
-            if reservas > 0:
-                raise UserError(
-                    _("No se puede eliminar el espacio '%s' porque tiene reservas asociadas.") % record.name
-                )
-        
-        return super().unlink()
-
-    availability_grid_html = fields.Html(
+  availability_grid_html = fields.Html(
             string="Cuadrante de Horarios", 
             compute="_compute_availability_grid_html",
-            sanitize=False 
-        )
+            sanitize=False)
+
+  @api.depends('name', 'location_id')
+  def _compute_display_name(self):
+    for record in self:
+      if record == False or record.name == False or record.location_id == False:
+        record.display_name = ""
+      else:
+        record.display_name = record.name + " - [" + record.location_id.name + "]"
+
+
+  def unlink(self):
+    for record in self:
+      reservas = self.env["maya_booking.booking"].search_count(
+        [("place_id", "=", record.id)]
+      )
+      if reservas > 0:
+        raise UserError(
+            _("No se puede eliminar el espacio '%s' porque tiene reservas asociadas.") % record.name)
 
     @api.depends('location_id', 'session_schedule_ids')
     def _compute_availability_grid_html(self):
