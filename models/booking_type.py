@@ -41,6 +41,8 @@ class BookingType(models.Model):
         domain="[('model_name', '=', resource_model)]"  
     ) """
 
+    image_url = fields.Image(_('Icono'), max_width=1920, max_height=1920)
+
     # computed para mostrar cuántos recursos tiene asociados
     resource_count = fields.Integer(compute='_compute_resource_count')  
 
