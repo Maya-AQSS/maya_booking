@@ -51,7 +51,7 @@ class Booking(models.Model):
         'maya_booking_session_rel',
         'booking_id',
         'session_id',
-        string=_("Sesiones"),
+        string=_("Sesiones reservadas"),
         help=_("Seleccione las sesiones consecutivas para su reserva.")
     )
 
@@ -60,14 +60,64 @@ class Booking(models.Model):
 
     resource_name = fields.Char(_('Recurso'), related="booking_resource_id.resource_name")
 
+    # la usamos para filtrar datos en la vista
+    available_session_ids = fields.Many2many(
+      'maya_core.session_schedule',
+      compute='_compute_available_sessions',
+      string=_("Sesiones disponibles"),
+    )
+
+
     @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
-    def _onchange_filter_sessions(self):
-      """
+    def _compute_available_sessions(self):
+      for record in self:
+        if not record.booking_date or not record.booking_resource_id:
+          record.available_session_ids = False
+          continue
+
+        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+        day_code = weekday_map.get(record.booking_date.weekday())
+
+        if not day_code:
+          record.available_session_ids = False
+          continue
+
+        location_id = record.booking_resource_id.reservable_ref.location_id.id
+
+        domain = [
+            ('week_day', '=', day_code),
+            ('location_id', '=', location_id),
+            ('active', '=', True),
+        ]
+
+        origin_id = record._origin.id if record._origin else False
+
+        # Excluir sesiones ya reservadas por otros para ese recurso y fecha
+        existing_bookings = self.env['maya_booking.booking'].search([
+            ('booking_date', '=', record.booking_date),
+            ('booking_resource_id', '=', record.booking_resource_id.id),
+            ('id', '!=', origin_id),
+        ])
+        booked_session_ids = existing_bookings.mapped('session_ids').ids
+        if booked_session_ids:
+            domain.append(('id', 'not in', booked_session_ids))
+
+        # Consecutividad: solo la siguiente a la última seleccionada
+        if record.session_ids:
+            last_end_time = max(record.session_ids.mapped('end_time'))
+            domain.append(('start_time', '=', last_end_time))
+
+        record.available_session_ids = self.env['maya_core.session_schedule'].search(domain)
+
+
+
+    """ def _onchange_filter_sessions(self):
+      
       Filtra sesiones por:
       1. Día de la semana y ubicación.
       2. Disponibilidad (que no estén ya reservadas por otros).
       3. Continuidad (solo mostrar la siguiente a la última elegida).
-      """
+      
       if not self.booking_date or not self.booking_resource_id:
         return {'domain': {'session_ids': [('id', '=', 0)]}}
 
@@ -108,7 +158,9 @@ class Booking(models.Model):
           # Esto obliga a que la selección sea perfectamente encadenada
           domain.append(('start_time', '=', last_end_time))
       
-      return {'domain': {'session_ids': domain}}
+      return {'domain': {'session_ids': domain}} """
+    
+    
 
     @api.depends('booking_date', 'session_ids.start_time', 'session_ids.end_time')
     def _compute_dates(self):

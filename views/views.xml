@@ -120,18 +120,20 @@
                 <field name="user_id" nolabel="1" />
               </div>
             </group>
-          
             <group>      
               <div class="o_row">
                 <i class="fa fa-calendar" title="Fecha de reserva" style="margin-right: 7px;"/><label for="booking_date"/>
                 <field name="booking_date" nolabel="1" options="{'datepicker': {'format': 'DD/MM/YYYY'}}" />
               </div>
             </group>
-                
-                  <!--    <field name="available_schedule_ids" invisible="1"/>
-                    <field name="schedule_id" options="{'no_create': True, 'no_open': True}" placeholder="Seleccione una sesión..."/> -->
 
-          <field name="session_ids" widget="many2many" options="{'no_create': True}"/>
+            <div class="o_row">
+              <i class="fa fa-calendar-check-o" title="Sesiones reservadas" style="margin-right: 7px;"/><label for="session_ids"/>
+            </div>
+                 
+            <field name="session_ids" widget="many2many" domain="[('id', 'in', available_session_ids)]" options="{'no_create': True}"/>
+            <!-- Campo invisible necesario para el dominio -->
+            <field name="available_session_ids" invisible="1"/>
                             <!-- <field name="session_count"/> -->
                             
                      <!--        <field name="date_start" force_save="1" readonly="1"/>
