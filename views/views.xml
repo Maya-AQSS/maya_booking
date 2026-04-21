@@ -76,7 +76,7 @@
         <page string="Reservas">
           <group>
             <group>
-              <field name="bookable" widget="boolean_toggle"/>
+              <field name="bookable"/>
               <field name="last_reservation_date" readonly="1" force_save="1"/>
             </group>
             <group>
