@@ -33,3 +33,41 @@ class ReservableMixin(models.AbstractModel):
     )
 
     display_name = fields.Char(string="Descripción", compute="_compute_display_name")
+
+    @api.constrains('num_max_session_consecutive', 'max_days_in_advance')
+    def _check_reservation_limits(self):
+        """
+        Restringir cantidad de sesiones consecutivas reservables y días de antelación de la reserva
+        """
+        for record in self:
+            if record.num_max_session_consecutive < 0 or record.num_max_session_consecutive > 11:
+                raise ValidationError(_("El número máximo de sesiones consecutivas debe estar entre 0 y 11."))
+            if record.max_days_in_advance < 0 or record.max_days_in_advance > 90:
+                raise ValidationError(_("Los días de antelación deben estar entre 0 y 90."))
+    
+    @api.onchange('bookable')
+    def _onchange_bookable_update_last_reservation(self):
+        """
+        Calcula la última reserva del recurso cuando deja de ser reservable.
+        Al estar en el mixin, funciona dinámicamente para Espacios, Empleados, etc.
+        """
+        for record in self:
+            if not record.bookable and record._origin.id:
+                
+                # Usamos self._name para que funcione dinámicamente con el modelo 
+                # que hereda el mixin (ej. 'maya_core.place' o 'hr.employee')
+                ref_string = f'{self._name},{record._origin.id}'
+                
+                resource = self.env['maya_booking.booking_resource'].search([
+                    ('reservable_ref', '=', ref_string)
+                ], limit=1)
+
+                if resource:
+                    last_booking = self.env['maya_booking.booking'].search(
+                        [('booking_resource_id', '=', resource.id)],
+                        order='date_start desc',
+                        limit=1
+                    )
+                    
+                    if last_booking and last_booking.date_start:
+                        record.last_reservation_date = last_booking.date_start
