@@ -178,16 +178,23 @@
     <field name="model">maya_core.place</field>
     <field name="inherit_id" ref="maya_core.view_place_form"/>
     <field name="arch" type="xml">
-      <xpath expr="//notebook" position="inside">
-        <page string="Asignar Sesiones">
-           <field name="session_schedule_ids" domain="[('location_id', '=', location_id)]"/>
-         </page>
-         <page string="Sesiones Disponibles">
-           <field name="availability_grid_html" readonly="1" nolabel="1"/>
-         </page>
-       </xpath>
-     </field>
-   </record>
+        <xpath expr="//notebook" position="inside">
+            <page string="Sesiones" name="page_sessions_root">
+                <notebook name="notebook_sessions_inner">
+                    
+                    <page string="Asignar Sesiones">
+                      <field name="session_schedule_ids" domain="[('location_id', '=', location_id)]"/>
+                    </page>
+
+                    <page string="Sesiones Disponibles" name="page_available_sessions">
+                        <field name="availability_grid_html" readonly="1" nolabel="1"/>
+                    </page>
+                    
+                </notebook>
+            </page>
+        </xpath>
+    </field>
+</record>
 
     <template id="template_cuadrante_horarios" name="Cuadrante de Horarios">
       <div style="max-width: 90%; margin-right: auto;">
