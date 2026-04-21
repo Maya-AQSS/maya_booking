@@ -41,7 +41,7 @@ class BookingType(models.Model):
         domain="[('model_name', '=', resource_model)]"  
     ) """
 
-    image_url = fields.Image(_('Icono'), max_width=1920, max_height=1920)
+    image_icon = fields.Image(_('Icono'), max_width=1920, max_height=1920)
 
     # computed para mostrar cuántos recursos tiene asociados
     resource_count = fields.Integer(compute='_compute_resource_count')  
@@ -55,9 +55,7 @@ class BookingType(models.Model):
     def _compute_resource_model(self):
       modelo_map = {
           'E': 'maya_core.employee',                    
-          'S': 'maya_core.place',           
-          #'W': 'maya_booking.workstation',       
-          #'I': 'maya_booking.equipment',         
+          'S': 'maya_core.place',              
       }
       for record in self:
         record.resource_model = modelo_map.get(record.resource_type, '')

@@ -16,8 +16,8 @@ class MayaBookingApi(http.Controller):
         data = []
         for rec in tipos_reserva:
             image_url = False
-            if hasattr(rec, 'image_1920') and rec.image_1920:
-                image_url = f"{base_url}/web/image/maya_booking.booking_type/{rec.id}/image_1920"
+            if hasattr(rec, 'image_icon') and rec.image_icon:
+                image_url = f"{base_url}/web/image/maya_booking.booking_type/{rec.id}/image_icon"
 
             data.append({
                 'id': rec.id,
