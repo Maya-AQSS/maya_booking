@@ -80,8 +80,13 @@
               <field name="last_reservation_date" readonly="1" force_save="1"/>
             </group>
             <group>
-              <field name="num_max_session_consecutive" readonly="not bookable"/>
-              <field name="max_days_in_advance" readonly="not bookable"/>
+              <field name="num_max_session_consecutive" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+                    
+              <field name="max_days_in_advance" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
             </group>
           </group>
         </page>
