@@ -52,7 +52,6 @@ class ReservableMixin(models.AbstractModel):
     def _onchange_bookable_update_last_reservation(self):
         for record in self:
             if not record.bookable and record._origin.id:
-                
                 ref_string = f'{self._name},{record._origin.id}'
                 
                 resource = self.env['maya_booking.booking_resource'].search([
@@ -67,7 +66,10 @@ class ReservableMixin(models.AbstractModel):
                     )
                     
                     if last_booking and last_booking.date_stop:
-                        # RESTAMOS 2 HORAS EXACTAS (ni zonas horarias ni hostias)
+                       # Se le restan dos horas para evitar error de desajuste
                         record.last_reservation_date = last_booking.date_stop - timedelta(hours=2)
                     else:
                         record.last_reservation_date = False
+            
+            else:
+                record.last_reservation_date = False

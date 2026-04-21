@@ -77,7 +77,10 @@
           <group>
             <group>
               <field name="bookable"/>
-              <field name="last_reservation_date" readonly="1" force_save="1"/>
+              <field name="last_reservation_date" 
+                readonly="1" 
+                force_save="1" 
+                invisible="bookable"/>
             </group>
             <group>
               <field name="num_max_session_consecutive" 
