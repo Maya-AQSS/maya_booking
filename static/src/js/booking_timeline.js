@@ -15,25 +15,7 @@ import {makeContext} from "@web/core/context";
 // 1. Patch del ArchParser: leer group_model
 // ─────────────────────────────────────────────
 patch(TimelineArchParser.prototype, {
-    /* parse(arch, fields) {
-    
-        // Llamamos al parser original
-        const archInfo = super.parse(arch, fields); 
-        // Leemos el atributo group_model del nodo <timeline>
-        // visitXML ya ha procesado el arch, así que lo leemos directamente
-        // del nodo raíz del arch
-        const timelineNode = arch.querySelector("timeline")
-            ? arch.querySelector("timeline")
-            : arch;
   
-        if (timelineNode && timelineNode.hasAttribute("group_model")) {
-            archInfo.group_model = timelineNode.getAttribute("group_model");
-        } 
-
-        return archInfo;
-    }, */
-
-
     parse(arch, fields) {
         const archInfo = super.parse(arch, fields);
         visitXML(arch, (node) => {
@@ -95,75 +77,6 @@ patch(TimelineRenderer.prototype, {
         return groups;
     },
 });
-
-    /**
-     * Sobrescribe on_add para pre-rellenar el formulario con:
-     * - booking_date: fecha del slot pinchado
-     * - booking_resource_id: recurso de la fila pinchada
-     * - session_ids: sesiones que cubren el rango seleccionado
-     */
-    /* async on_add(item, callback) {
-        // Cancelamos la creación automática del timeline
-        callback(null);
-
-
-        console.log("Añadiendo reserva:", item);
-
-        const resourceId = item.group;
-        if (!resourceId || resourceId === -1) {
-            return;
-        }
-
-        // Convertir JS Date a float de hora (ej: 9:30 → 9.5)
-        const toFloatHour = (jsDate) => {
-            const d = new Date(jsDate);
-            return d.getHours() + d.getMinutes() / 60;
-        };
-
-        // Extraer fecha como string YYYY-MM-DD
-        const toDateStr = (jsDate) => {
-            const d = new Date(jsDate);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, "0");
-            const day = String(d.getDate()).padStart(2, "0");
-            return `${y}-${m}-${day}`;
-        };
-
-        const dateStr = toDateStr(item.start);
-        const startFloat = toFloatHour(item.start);
-        // Si solo se pincha (sin arrastrar), end === start; usamos start + epsilon
-        const endFloat = item.end
-            ? toFloatHour(item.end)
-            : startFloat + 0.01;
-
-        console.log("Añadiendo reserva5:", { startFloat, endFloat, dateStr });
-        // Llamada RPC para obtener las sesiones que cubren el rango
-        let sessionIds = [];
-        try {
-            sessionIds = await this.orm.call(
-                "maya_booking.booking",
-                "get_sessions_for_slot",
-                [resourceId, dateStr, startFloat, endFloat],
-            );
-        } catch (e) {
-            console.error("Error obteniendo sesiones:", e);
-        }
-
-        // Construir contexto para el formulario
-        const context = {
-            default_booking_resource_id: resourceId,
-            default_booking_date: dateStr,
-            // session_ids es Many2many: [(6, 0, [ids])] para pre-rellenar
-            default_session_ids: sessionIds.length
-                ? [[6, 0, sessionIds]]
-                : [],
-        };
-
-        console.log("añadiendo reservassssssss")
-        // Abrir el formulario de creación con los valores pre-rellenados
-        this.props.onAdd({...item, context});
-    }, 
-});*/
 
 patch(TimelineController.prototype, {
 
