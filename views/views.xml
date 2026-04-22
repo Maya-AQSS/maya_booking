@@ -181,15 +181,12 @@
         <xpath expr="//notebook" position="inside">
             <page string="Sesiones" name="page_sessions_root">
                 <notebook name="notebook_sessions_inner">
-                    
-                    <page string="Asignar Sesiones">
-                      <field name="session_schedule_ids" domain="[('location_id', '=', location_id)]"/>
-                    </page>
-
                     <page string="Sesiones Disponibles" name="page_available_sessions">
                         <field name="availability_grid_html" readonly="1" nolabel="1"/>
                     </page>
-                    
+                    <page string="Asignar Sesiones">
+                      <field name="session_schedule_ids" domain="[('location_id', '=', location_id)]"/>
+                    </page>
                 </notebook>
             </page>
         </xpath>
