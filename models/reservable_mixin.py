@@ -73,3 +73,17 @@ class ReservableMixin(models.AbstractModel):
             
             else:
                 record.last_reservation_date = False
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'bookable' in vals:
+            for record in self:
+                # Buscamos si este recurso físico está enlazado a algún booking_resource. ! Se usa sudo
+                resources = self.env['maya_booking.booking_resource'].sudo().search([
+                    ('reservable_model', '=', self._name),
+                    ('reservable_id', '=', record.id)
+                ])
+                # Actualizamos el campo espejo en la tabla intermedia
+                if resources:
+                    resources.write({'is_bookable': vals['bookable']})
+        return res
