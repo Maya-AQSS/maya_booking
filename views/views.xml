@@ -6,31 +6,35 @@
     <field name="name">maya_booking.booking_type.kanban</field>
     <field name="model">maya_booking.booking_type</field>
     <field name="arch" type="xml">
-      <kanban class="o_kanban_ungrouped" action="action_open_timeline" type="object">
-        <field name="name"/>
-        <templates>
-          <t t-name="card">
-            <div class="oe_kanban_global_click w-100 d-flex align-items-center justify-content-between p-3 mb-1 position-relative overflow-hidden">
-              
-              <div class="mi-ribbon-reserva">Reserva</div>
+        <kanban class="o_kanban_ungrouped" action="action_open_timeline" type="object">
+            <field name="name"/>
+            <field name="published"/> 
+            
+            <templates>
+                <t t-name="card">
+                    
+                    <widget name="web_ribbon" title="PUBLICADO" bg_color="text-bg-info" invisible="not published"/>
 
-              <div class="d-flex align-items-center">
-                <span class="fw-bold fs-5">
-                  <field name="name"/>
-                </span>
-              </div>
+                    <div class="oe_kanban_global_click w-100 d-flex align-items-center justify-content-between p-3 mb-1">
+                        
+                        <div class="d-flex align-items-center">
+                            <!-- insertar imagen del booking type -->
+                            <span class="fw-bold fs-5">
+                                <field name="name"/>
+                            </span>
+                        </div>
 
-              <div class="d-flex gap-2 me-5">
-                <button class="btn btn-sm btn-secondary" title="Publicar">Publicar</button>
-                <button type="open" class="btn btn-sm btn-primary" title="Editar">Editar</button>
-              </div>
+                        <div class="d-flex gap-2 me-5 position-relative" style="z-index: 11;">
+                            <button class="btn btn-sm btn-secondary" title="Publicar">Publicar</button>
+                            <button type="open" class="btn btn-sm btn-primary" title="Editar">Editar</button>
+                        </div>
 
-            </div>
-          </t>
-        </templates>
-      </kanban>
+                    </div>
+                </t>
+            </templates>
+        </kanban>
     </field>
-  </record>
+</record>
 
 <record id="maya_booking.view_booking_type_form" model="ir.ui.view">
   <field name="name">maya_booking.booking_type.form</field>
