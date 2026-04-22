@@ -13,11 +13,12 @@
             <templates>
                 <t t-name="card">
                     
-                    <widget name="web_ribbon" title="PUBLICADO" bg_color="text-bg-success" invisible="not published"/>
+                    <widget name="web_ribbon" title="PUBLICADO" bg_color="text-bg-info" invisible="not published"/>
 
                     <div class="oe_kanban_global_click w-100 d-flex align-items-center justify-content-between p-3 mb-1">
                         
                         <div class="d-flex align-items-center">
+                            <!-- insertar imagen del booking type -->
                             <span class="fw-bold fs-5">
                                 <field name="name"/>
                             </span>
@@ -50,7 +51,6 @@
             <field name="duration"/>
             <!-- <field name="resource_type"/> -->
             <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
-            <field name="published"/>
             </group>
           </group>
           <notebook>
