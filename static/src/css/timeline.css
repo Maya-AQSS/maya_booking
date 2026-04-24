@@ -1,0 +1,23 @@
+/* Permitimos que la caja principal desborde y se ponga por encima del resto */
+.o_timeline_view .vis-item {
+    overflow: visible !important;
+    z-index: 1; 
+}
+
+/* Configuramos el contenedor para permitir saltos de línea PERO prohibimos romper palabras */
+.o_timeline_view .vis-item .vis-item-content {
+    white-space: normal !important; 
+    word-break: normal !important; 
+    overflow-wrap: normal !important;
+    
+    overflow: visible !important;
+    line-height: 1.2 !important;
+    display: block !important;
+}
+
+/* Limpiamos las reglas del div interno que acabamos de poner en el XML */
+.o_timeline_view .vis-item .vis-item-content > div {
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow: visible !important;
+}
