@@ -28,7 +28,8 @@ class Booking(models.Model):
     booking_resource_id = fields.Many2one(
         comodel_name='maya_booking.booking_resource', 
         string=_("Recurso a reservar"), 
-        required=True
+        required=True,
+        domain="[('is_bookable', '=', True)]" # Oculta recursos no reservables del desplegable
     )
     
     user_id = fields.Many2one(
@@ -231,3 +232,9 @@ class Booking(models.Model):
       ], order='start_time asc')
 
       return sessions.ids
+    
+    @api.constrains('booking_resource_id')
+    def _check_resource_is_bookable(self):
+        for record in self:
+            if record.booking_resource_id and not record.booking_resource_id.is_bookable:
+                raise ValidationError(_("El recurso seleccionado ha sido marcado como 'No Reservable'."))

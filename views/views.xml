@@ -70,19 +70,31 @@
     </field>
   </record>
 
- <!-- View de place (añadido) --> 
+  <!-- View de place (añadido) --> 
   <record model="ir.ui.view" id="maya_booking.view_place_form_inherit">
     <field name="name">Formulario espacios. Añade reservas</field>
     <field name="model">maya_core.place</field>
     <field name="inherit_id" ref="maya_core.view_place_form"/>
     <field name="arch" type="xml">
       <xpath expr="/form/notebook/page[1]" position="after">
-        <page string = "Reservas">
+        <page string="Reservas">
           <group>
-            <field name="bookable" widget="boolean_toggle"/>
-            <field name="num_max_session_consecutive"/>
-            <field name="max_days_in_advance"/>
-            <field name="last_reservation_date"/>
+            <group>
+              <field name="bookable"/>
+              <field name="last_reservation_date" 
+                readonly="1" 
+                force_save="1" 
+                invisible="bookable"/>
+            </group>
+            <group>
+              <field name="num_max_session_consecutive" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+                    
+              <field name="max_days_in_advance" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+            </group>
           </group>
         </page>
       </xpath>

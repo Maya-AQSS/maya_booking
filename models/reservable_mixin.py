@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError
+from datetime import timedelta
 
 class ReservableMixin(models.AbstractModel):
     _name = 'maya_booking.reservable.mixin'
@@ -33,3 +34,56 @@ class ReservableMixin(models.AbstractModel):
     )
 
     display_name = fields.Char(string="Descripción", compute="_compute_display_name")
+
+    @api.constrains('num_max_session_consecutive', 'max_days_in_advance')
+    def _check_reservation_limits(self):
+        """
+        Restringir cantidad de sesiones consecutivas reservables y días de antelación de la reserva
+        """
+        for record in self:
+            if record.num_max_session_consecutive < 0 or record.num_max_session_consecutive > 11:
+                raise ValidationError(_("El número máximo de sesiones consecutivas debe estar entre 0 y 11."))
+            if record.max_days_in_advance < 0 or record.max_days_in_advance > 90:
+                raise ValidationError(_("Los días de antelación deben estar entre 0 y 90."))
+    
+    
+
+    @api.onchange('bookable')
+    def _onchange_bookable_update_last_reservation(self):
+        for record in self:
+            if not record.bookable and record._origin.id:
+                ref_string = f'{self._name},{record._origin.id}'
+                
+                resource = self.env['maya_booking.booking_resource'].search([
+                    ('reservable_ref', '=', ref_string)
+                ], limit=1)
+
+                if resource:
+                    last_booking = self.env['maya_booking.booking'].search(
+                        [('booking_resource_id', '=', resource.id)],
+                        order='date_stop desc',
+                        limit=1
+                    )
+                    
+                    if last_booking and last_booking.date_stop:
+                       # Se le restan dos horas para evitar error de desajuste
+                        record.last_reservation_date = last_booking.date_stop - timedelta(hours=2)
+                    else:
+                        record.last_reservation_date = False
+            
+            else:
+                record.last_reservation_date = False
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'bookable' in vals:
+            for record in self:
+                # Buscamos si este recurso físico está enlazado a algún booking_resource. ! Se usa sudo
+                resources = self.env['maya_booking.booking_resource'].sudo().search([
+                    ('reservable_model', '=', self._name),
+                    ('reservable_id', '=', record.id)
+                ])
+                # Actualizamos el campo espejo en la tabla intermedia
+                if resources:
+                    resources.write({'is_bookable': vals['bookable']})
+        return res
