@@ -28,13 +28,33 @@ patch(TimelineArchParser.prototype, {
 });
 
 // ─────────────────────────────────────────────
-// 2. Patch del Renderer: usar group_model en split_groups
+// 2. Patch del Renderer: usar group_model en split_groups y Forzar Zoom
 // ─────────────────────────────────────────────
 patch(TimelineRenderer.prototype, {
 
     async split_groups(records) {
         // this.params viene de this.model.params, que contiene el archInfo
         const groupModel = this.params.group_model;
+
+        // Aplicamos esto solo la primera vez que carga la vista para no bloquear la navegación libre del usuario
+        if (!this._zoomApplied) {
+            this._zoomApplied = true;
+            
+            // Usamos setTimeout para dejar que la OCA termine de instanciar this.timeline
+            setTimeout(() => {
+                if (this.timeline) {
+                    const today = new Date();
+                    // Configuramos la ventana visible (Por ejemplo: de 08:00 a 15:00)
+                    // Esto genera el "zoom" y lo deja centrado en la mañana
+                    const startWindow = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0, 0);
+                    const endWindow = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0, 0);
+                    
+                    // Movemos la cámara de Vis.js
+                    this.timeline.setWindow(startWindow, endWindow, { animation: false });
+                }
+            }, 100); 
+        }
+        // ------------------------------------------
 
         if (!groupModel) {
             // Sin group_model: comportamiento original
@@ -60,7 +80,6 @@ patch(TimelineRenderer.prototype, {
         const groups = [];
 
         // Grupo para reservas sin recurso asignado en el caso de que no haya un modelo de grupo
-        // Si están todos los recursos ya listados no tiene sentido esta fila
         if (!groupModel) {
           groups.push({id: -1, content: _t("<b>SIN ASIGNAR</b>"), order: -1});
         }
