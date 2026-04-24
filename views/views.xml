@@ -51,6 +51,7 @@
             <field name="duration"/>
             <!-- <field name="resource_type"/> -->
             <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+            <field name="image_icon" widget="image" options="{'size': [150, 200], 'zoom': true}" />
             </group>
           </group>
           <notebook>
