@@ -165,37 +165,41 @@ class Booking(models.Model):
 
     @api.depends('booking_date', 'session_ids.start_time', 'session_ids.end_time')
     def _compute_dates(self):
-      """
-      Calcula el inicio de la primera sesión y el fin de la última
-      combinándolos con la fecha de la reserva.
-      """
-      for record in self:
-        if record.booking_date and record.session_ids:
-          # 1. Obtener los extremos de las sesiones seleccionadas
-          # Usamos min y max sobre el conjunto de sesiones vinculadas
-          start_hour = min(record.session_ids.mapped('start_time'))
-          end_hour = max(record.session_ids.mapped('end_time'))
+        for record in self:
+            if record.booking_date and record.session_ids:
+                # Ordenar sesiones para asegurar que cogemos el inicio real y el fin real
+                start_hour = min(record.session_ids.mapped('start_time'))
+                end_hour = max(record.session_ids.mapped('end_time'))
 
-          # 2. Helper para convertir Float (9.5) a Datetime
-          record.date_start = self._combine_date_and_float(record.booking_date, start_hour)
-          record.date_stop = self._combine_date_and_float(record.booking_date, end_hour)
-        else:
-          record.date_start = False
-          record.date_stop = False
+                record.date_start = self._combine_date_and_float(record.booking_date, start_hour)
+                record.date_stop = self._combine_date_and_float(record.booking_date, end_hour)
+            else:
+                record.date_start = False
+                record.date_stop = False
 
     def _combine_date_and_float(self, base_date, float_time):
-      """
-      Convierte una fecha y una hora float en un objeto Datetime.
-      Ejemplo: 2026-04-17 + 9.5 -> 2026-04-17 09:30:00
-      """
-      # Extraer horas y minutos del float (ej: 9.75 -> 9 horas, 0.75 * 60 = 45 min)
-      hours = int(float_time)
-      minutes = int(round((float_time - hours) * 60))
-      
-      # Combinar con la fecha base
-      return datetime.combine(base_date, datetime.min.time()).replace(
-          hour=hours, minute=minutes
-      )
+        """
+        Convierte una fecha y una hora float en un objeto Datetime UTC.
+        """
+        hours = int(float_time)
+        minutes = int(round((float_time - hours) * 60))
+        
+        # 1. Creamos el datetime "ingenuo" (naive) con la hora local que queremos
+        naive_dt = datetime.combine(base_date, datetime.min.time()).replace(
+            hour=hours, minute=minutes
+        )
+        
+        # 2. Obtenemos la zona horaria del usuario (o 'Europe/Madrid' por defecto)
+        user_tz_name = self.env.user.tz or 'Europe/Madrid'
+        user_tz = pytz.timezone(user_tz_name)
+        
+        # 3. Localizamos ese datetime (le decimos: "esta hora es CEST")
+        # localize() es mejor que replace(tzinfo=...) para manejar cambios de horario verano/invierno
+        local_dt = user_tz.localize(naive_dt)
+        
+        # 4. Lo convertimos a UTC y le quitamos la información de zona para que Odoo lo acepte
+        # Odoo espera datetimes naive en la base de datos, asumiendo que son UTC
+        return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
     
     @api.model
     def get_sessions_for_slot(self, resource_id, date_str, start_float, end_float):

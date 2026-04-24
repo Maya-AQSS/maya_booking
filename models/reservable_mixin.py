@@ -66,8 +66,7 @@ class ReservableMixin(models.AbstractModel):
                     )
                     
                     if last_booking and last_booking.date_stop:
-                       # Se le restan dos horas para evitar error de desajuste
-                        record.last_reservation_date = last_booking.date_stop - timedelta(hours=2)
+                        record.last_reservation_date = last_booking.date_stop
                     else:
                         record.last_reservation_date = False
             
