@@ -70,19 +70,31 @@
     </field>
   </record>
 
- <!-- View de place (añadido) --> 
+  <!-- View de place (añadido) --> 
   <record model="ir.ui.view" id="maya_booking.view_place_form_inherit">
     <field name="name">Formulario espacios. Añade reservas</field>
     <field name="model">maya_core.place</field>
     <field name="inherit_id" ref="maya_core.view_place_form"/>
     <field name="arch" type="xml">
       <xpath expr="/form/notebook/page[1]" position="after">
-        <page string = "Reservas">
+        <page string="Reservas">
           <group>
-            <field name="bookable" widget="boolean_toggle"/>
-            <field name="num_max_session_consecutive"/>
-            <field name="max_days_in_advance"/>
-            <field name="last_reservation_date"/>
+            <group>
+              <field name="bookable"/>
+              <field name="last_reservation_date" 
+                readonly="1" 
+                force_save="1" 
+                invisible="bookable"/>
+            </group>
+            <group>
+              <field name="num_max_session_consecutive" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+                    
+              <field name="max_days_in_advance" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+            </group>
           </group>
         </page>
       </xpath>
@@ -154,28 +166,33 @@
     <field name="name">maya_booking.booking.timeline</field>
     <field name="model">maya_booking.booking</field>
     <field name="arch" type="xml">
-      <timeline date_start="date_start" 
+        <timeline date_start="date_start" 
                   date_stop="date_stop" 
                   default_group_by="booking_resource_id"
                   group_model="maya_booking.booking_resource"
                   event_open_popup="true"
                   zoomKey="ctrlKey"
                   mode="week"
-  
-                  colors="#FF7F7F: user_id != false;"> 
+                  stack="False"
+                  colors="#946bf3: reason == 'TC'; 
+                          #4f8bec: reason == 'TI'; 
+                          #40c498: reason == 'R'; 
+                          #e05555: reason == 'EX'; 
+                          #e470de: reason == 'O';"> 
           
-        <field name="name"/>
-        <field name="booking_resource_id"/>
-        <field name="user_id"/>
+            <field name="name"/>
+            <field name="booking_resource_id"/>
+            <field name="user_id"/>
+            <field name="reason"/>
 
-        <templates>
-          <t t-name="timeline-item">
-            <div class="o_timeline_item_content" style="padding: 2px;">
-                <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
-            </div>
-          </t>
-        </templates>
-      </timeline>
+            <templates>
+                <t t-name="timeline-item">
+                    <div class="o_timeline_item_content" style="padding: 4px 4px; color: #111827; font-weight: 400;">
+                        <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
+                    </div>
+                </t>
+            </templates>
+        </timeline>
     </field>
   </record>
   
