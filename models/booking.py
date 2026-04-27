@@ -247,8 +247,33 @@ class Booking(models.Model):
 
       return sessions.ids
     
-    @api.constrains('booking_resource_id')
+    @api.constrains('booking_resource_id', 'date_stop')
     def _check_resource_is_bookable(self):
         for record in self:
-            if record.booking_resource_id and not record.booking_resource_id.is_bookable:
-                raise ValidationError(_("El recurso seleccionado ha sido marcado como 'No Reservable'."))
+            resource = record.booking_resource_id
+            
+            # Si el recurso está marcado como "No reservable" (is_bookable = False)
+            if resource and not resource.is_bookable:
+                
+                # Buscamos el registro físico real (ej: maya_core.place) para ver su límite
+                if resource.reservable_model and resource.reservable_id:
+                    physical_record = self.env[resource.reservable_model].sudo().browse(resource.reservable_id)
+                    
+                    # Si el registro físico tiene fecha de última reserva guardada
+                    if hasattr(physical_record, 'last_reservation_date') and physical_record.last_reservation_date:
+                        
+                        # Si nuestra reserva termina DESPUÉS de la fecha límite, bloqueamos
+                        if record.date_stop and record.date_stop > physical_record.last_reservation_date:
+                            
+                            # Formateamos la fecha a la zona horaria del usuario para el mensaje de error
+                            user_tz = pytz.timezone(self.env.user.tz or 'Europe/Madrid')
+                            local_dt = pytz.utc.localize(physical_record.last_reservation_date).astimezone(user_tz)
+                            formatted_date = local_dt.strftime('%d/%m/%Y a las %H:%M')
+                            
+                            raise ValidationError(
+                                _("El recurso '%s' pasará a estar 'No Reservable'. Solo admite reservas que terminen antes del %s.") % 
+                                (resource.resource_name, formatted_date)
+                            )
+                    else:
+                        # Si no es reservable y no tiene fecha límite (nunca tuvo reservas o se limpió), se bloquea del todo
+                        raise ValidationError(_("El recurso '%s' ha sido marcado como 'No Reservable' y no admite nuevas reservas.") % resource.resource_name)
