@@ -277,3 +277,43 @@ class Booking(models.Model):
                     else:
                         # Si no es reservable y no tiene fecha límite (nunca tuvo reservas o se limpió), se bloquea del todo
                         raise ValidationError(_("El recurso '%s' ha sido marcado como 'No Reservable' y no admite nuevas reservas.") % resource.resource_name)
+                    
+    @api.constrains('booking_date', 'booking_resource_id')
+    def _check_max_days_in_advance(self):
+        """
+        Valida que la reserva no supere el límite de días de antelación
+        configurado en el recurso físico (Place, Employee, etc.).
+        """
+        for record in self:
+            if not record.booking_date or not record.booking_resource_id:
+                continue
+
+            resource = record.booking_resource_id
+            
+            # Buscamos el registro físico real para leer su configuración
+            if resource.reservable_model and resource.reservable_id:
+                physical_record = self.env[resource.reservable_model].sudo().browse(resource.reservable_id)
+                
+                # Verificamos que el recurso tenga el campo y que el límite sea mayor que 0 (0 = sin límite)
+                if hasattr(physical_record, 'max_days_in_advance') and physical_record.max_days_in_advance > 0:
+                    
+                    # Obtenemos la fecha actual ajustada a la zona horaria del usuario
+                    today = fields.Date.context_today(self)
+                    
+                    # Calculamos la diferencia en días
+                    diferencia_dias = (record.booking_date - today).days
+                    
+                    if diferencia_dias > physical_record.max_days_in_advance:
+                        
+                        # Calculamos la fecha máxima exacta para dársela mascadita al usuario en el error
+                        fecha_maxima = today + timedelta(days=physical_record.max_days_in_advance)
+                        fecha_maxima_str = fecha_maxima.strftime('%d/%m/%Y')
+                        
+                        raise ValidationError(
+                            _("No puedes reservar el recurso '%s' con más de %s días de antelación. "
+                              "La fecha máxima permitida para este recurso es el %s.") % (
+                                resource.resource_name, 
+                                physical_record.max_days_in_advance,
+                                fecha_maxima_str
+                            )
+                        )
