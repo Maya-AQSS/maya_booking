@@ -11,7 +11,7 @@ class Booking(models.Model):
     _name = 'maya_booking.booking'
     _description = _('Reservas')
 
-    name = fields.Char(string=_("Motivo / Descripción"))
+    name = fields.Char(string=_("Descripción"), compute='_compute_name', store=True)
 
     reason =  fields.Selection(
        [('TC', _('Tutoria colectiva')),     
@@ -67,6 +67,16 @@ class Booking(models.Model):
       compute='_compute_available_sessions',
       string=_("Sesiones disponibles"),
     )
+
+    @api.depends('reason')
+    def _compute_name(self):
+        for record in self:
+            if record.reason:
+                # extrae la etiqueta legible ("Tutoría individual") en lugar del código ("TI")
+                reason_label = dict(self._fields['reason'].selection).get(record.reason, record.reason)
+                record.name = reason_label
+            else:
+                record.name = "Nueva Reserva"
 
 
     @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
