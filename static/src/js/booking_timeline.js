@@ -47,7 +47,7 @@ patch(TimelineRenderer.prototype, {
                     // Configuramos la ventana visible (Por ejemplo: de 08:00 a 15:00)
                     // Esto genera el "zoom" y lo deja centrado en la mañana
                     const startWindow = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0, 0);
-                    const endWindow = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0, 0);
+                    const endWindow = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 21, 0, 0);
                     
                     // Movemos la cámara de Vis.js
                     this.timeline.setWindow(startWindow, endWindow, { animation: false });
