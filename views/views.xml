@@ -160,7 +160,7 @@
                   group_model="maya_booking.booking_resource"
                   event_open_popup="true"
                   zoomKey="ctrlKey"
-                  mode="week"
+                  mode="day"
   
                   colors="#FF7F7F: user_id != false;"> 
           
