@@ -81,45 +81,37 @@ class Booking(models.Model):
 
     @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
     def _compute_available_sessions(self):
-      for record in self:
-        if not record.booking_date or not record.booking_resource_id:
-          record.available_session_ids = False
-          continue
+        for record in self:
+            if not record.booking_date or not record.booking_resource_id:
+                record.available_session_ids = False
+                continue
 
-        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
-        day_code = weekday_map.get(record.booking_date.weekday())
+            recurso_fisico = record.booking_resource_id.reservable_ref
+            
+            if not recurso_fisico:
+                record.available_session_ids = False
+                continue
 
-        if not day_code:
-          record.available_session_ids = False
-          continue
+            weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+            day_code = weekday_map.get(record.booking_date.weekday())
 
-        location_id = record.booking_resource_id.reservable_ref.location_id.id
+            domain = [
+                ('id', 'in', recurso_fisico.session_schedule_ids.ids), # SOLO las asignadas al Place
+                ('week_day', '=', day_code),
+                ('active', '=', True),
+            ]
 
-        domain = [
-            ('week_day', '=', day_code),
-            ('location_id', '=', location_id),
-            ('active', '=', True),
-        ]
+            existing_bookings = self.env['maya_booking.booking'].sudo().search([
+                ('booking_date', '=', record.booking_date),
+                ('booking_resource_id', '=', record.booking_resource_id.id),
+                ('id', '!=', record._origin.id if record._origin else False),
+            ])
+            
+            booked_session_ids = existing_bookings.mapped('session_ids').ids
+            if booked_session_ids:
+                domain.append(('id', 'not in', booked_session_ids))
 
-        origin_id = record._origin.id if record._origin else False
-
-        # Excluir sesiones ya reservadas por otros para ese recurso y fecha
-        existing_bookings = self.env['maya_booking.booking'].search([
-            ('booking_date', '=', record.booking_date),
-            ('booking_resource_id', '=', record.booking_resource_id.id),
-            ('id', '!=', origin_id),
-        ])
-        booked_session_ids = existing_bookings.mapped('session_ids').ids
-        if booked_session_ids:
-            domain.append(('id', 'not in', booked_session_ids))
-
-        # Consecutividad: solo la siguiente a la última seleccionada
-        if record.session_ids:
-            last_end_time = max(record.session_ids.mapped('end_time'))
-            domain.append(('start_time', '=', last_end_time))
-
-        record.available_session_ids = self.env['maya_core.session_schedule'].search(domain)
-
+            record.available_session_ids = self.env['maya_core.session_schedule'].sudo().search(domain)
 
 
     """ def _onchange_filter_sessions(self):
@@ -194,78 +186,67 @@ class Booking(models.Model):
         hours = int(float_time)
         minutes = int(round((float_time - hours) * 60))
         
-        # 1. Creamos el datetime "ingenuo" (naive) con la hora local que queremos
         naive_dt = datetime.combine(base_date, datetime.min.time()).replace(
             hour=hours, minute=minutes
         )
         
-        # 2. Obtenemos la zona horaria del usuario (o 'Europe/Madrid' por defecto)
         user_tz_name = self.env.user.tz or 'Europe/Madrid'
         user_tz = pytz.timezone(user_tz_name)
         
-        # 3. Localizamos ese datetime (le decimos: "esta hora es CEST")
-        # localize() es mejor que replace(tzinfo=...) para manejar cambios de horario verano/invierno
         local_dt = user_tz.localize(naive_dt)
         
-        # 4. Lo convertimos a UTC y le quitamos la información de zona para que Odoo lo acepte
-        # Odoo espera datetimes naive en la base de datos, asumiendo que son UTC
         return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
     
     @api.model
     def get_sessions_for_slot(self, resource_id, date_str, start_float, end_float):
-      """
-      Dado un recurso, fecha y rango horario (floats),
-      devuelve las sesiones que cubren ese rango.
-      Usado desde el timeline JS para pre-rellenar el formulario.
-      """
-      from datetime import date as date_type
+        """
+        Dado un recurso, fecha y rango horario (floats),
+        devuelve las sesiones que cubren ese rango.
+        Usado desde el timeline JS para pre-rellenar el formulario.
+        """
+        from datetime import date as date_type
 
-      # Convertir fecha string a date
-      booking_date = fields.Date.from_string(date_str)
+        # Convertir fecha string a date
+        booking_date = fields.Date.from_string(date_str)
 
-      # Día de la semana
-      weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
-      day_code = weekday_map.get(booking_date.weekday())
-      if not day_code:
-          return []
+        # Día de la semana
+        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+        day_code = weekday_map.get(booking_date.weekday())
+        if not day_code:
+            return []
 
-      # Obtener location del recurso
-      resource = self.env['maya_booking.booking_resource'].browse(resource_id)
-      if not resource or not resource.reservable_ref:
-          return []
+        # Obtener el recurso
+        resource = self.env['maya_booking.booking_resource'].browse(resource_id)
+        if not resource or not resource.reservable_ref:
+            return []
 
-      location_id = resource.reservable_ref.location_id.id
+        # recurso físico real
+        recurso_fisico = resource.reservable_ref
 
-      # Buscar sesiones que solapen con el rango seleccionado
-      sessions = self.env['maya_core.session_schedule'].search([
-          ('week_day', '=', day_code),
-          ('location_id', '=', location_id),
-          ('active', '=', True),
-          ('start_time', '<', end_float),    # empieza antes del fin del slot
-          ('end_time', '>', start_float),    # termina después del inicio del slot
-      ], order='start_time asc')
+        sessions = self.env['maya_core.session_schedule'].search([
+            ('id', 'in', recurso_fisico.session_schedule_ids.ids), 
+            ('week_day', '=', day_code),
+            ('active', '=', True),
+            ('start_time', '<', end_float),   
+            ('end_time', '>', start_float),   
+        ], order='start_time asc')
 
-      return sessions.ids
+        return sessions.ids
     
     @api.constrains('booking_resource_id', 'date_stop')
     def _check_resource_is_bookable(self):
         for record in self:
             resource = record.booking_resource_id
             
-            # Si el recurso está marcado como "No reservable" (is_bookable = False)
             if resource and not resource.is_bookable:
                 
-                # Buscamos el registro físico real (ej: maya_core.place) para ver su límite
                 if resource.reservable_model and resource.reservable_id:
                     physical_record = self.env[resource.reservable_model].sudo().browse(resource.reservable_id)
                     
-                    # Si el registro físico tiene fecha de última reserva guardada
                     if hasattr(physical_record, 'last_reservation_date') and physical_record.last_reservation_date:
-                        
-                        # Si nuestra reserva termina DESPUÉS de la fecha límite, bloqueamos
+
                         if record.date_stop and record.date_stop > physical_record.last_reservation_date:
                             
-                            # Formateamos la fecha a la zona horaria del usuario para el mensaje de error
                             user_tz = pytz.timezone(self.env.user.tz or 'Europe/Madrid')
                             local_dt = pytz.utc.localize(physical_record.last_reservation_date).astimezone(user_tz)
                             formatted_date = local_dt.strftime('%d/%m/%Y a las %H:%M')
