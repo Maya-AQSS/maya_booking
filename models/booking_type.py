@@ -88,3 +88,10 @@ class BookingType(models.Model):
             'timeline_booking_type_id': self.id,  
         }
       }
+    
+    def action_toggle_published(self):
+        """
+        Alterna el estado de publicación del tipo de reserva desde el Kanban.
+        """
+        for record in self:
+            record.published = not record.published

@@ -25,7 +25,10 @@
                         </div>
 
                         <div class="d-flex gap-2 me-5 position-relative" style="z-index: 11;">
-                            <button class="btn btn-sm btn-secondary" title="Publicar">Publicar</button>
+                            <button name="action_toggle_published" type="object" class="btn btn-sm btn-secondary">
+                                <t t-esc="record.published.raw_value ? 'Despublicar' : 'Publicar'"/>
+                            </button>
+                            
                             <button type="open" class="btn btn-sm btn-primary" title="Editar">Editar</button>
                         </div>
 
