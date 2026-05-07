@@ -298,3 +298,11 @@ class Booking(models.Model):
                                 fecha_maxima_str
                             )
                         )
+    
+    def write(self, vals):
+        # Si el Timeline (u otro proceso) intenta cambiar las fechas directamente
+        # pero NO está cambiando las sesiones, bloqueamos el movimiento.
+        if ('date_start' in vals or 'date_stop' in vals) and 'session_ids' not in vals:
+            raise ValidationError(_("No puedes mover las reservas arrastrándolas. "
+                                    "Por favor, abre la reserva y cambia las sesiones asignadas."))
+        return super(Booking, self).write(vals)

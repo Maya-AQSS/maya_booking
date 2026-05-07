@@ -174,7 +174,6 @@
                   zoomKey="ctrlKey"
                   mode="week"
                   stack="False"
-                  edit="0"
                   colors="#946bf3: reason == 'TC'; 
                           #4f8bec: reason == 'TI'; 
                           #40c498: reason == 'R'; 
