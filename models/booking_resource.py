@@ -22,7 +22,7 @@ class BookingResource(models.Model):
     selection='_get_reservable_models',   # devuelve lista de modelos permitidos
     string="Recurso físico",
     compute='_compute_reservable_ref', 
-    # inverse='_inverse_reservable_ref', 
+    inverse='_inverse_reservable_ref', 
     store=True
   )
   
