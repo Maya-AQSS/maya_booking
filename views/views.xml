@@ -85,6 +85,8 @@
                 readonly="1" 
                 force_save="1" 
                 invisible="bookable"/>
+              <field name="pending_bookings_count" readonly="1" 
+                force_save="1" invisible="bookable"/>
             </group>
             <group>
               <field name="num_max_session_consecutive" 
@@ -174,7 +176,6 @@
                   zoomKey="ctrlKey"
                   mode="week"
                   stack="False"
-                  edit="0"
                   colors="#946bf3: reason == 'TC'; 
                           #4f8bec: reason == 'TI'; 
                           #40c498: reason == 'R'; 
