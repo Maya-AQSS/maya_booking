@@ -1,0 +1,22 @@
+.o_timeline_view .vis-item {
+    z-index: 1; 
+}
+
+.o_timeline_view .vis-item .vis-item-content {
+    white-space: normal !important; 
+    word-break: normal !important; 
+    overflow-wrap: normal !important;
+    line-height: 1.2 !important;
+    display: block !important;
+    overflow: hidden !important; 
+}
+
+.o_timeline_view .vis-item .vis-item-content > div {
+    white-space: normal !important;
+    word-break: normal !important;
+    
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;   
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;      
+}
