@@ -11,7 +11,7 @@ class Booking(models.Model):
     _name = 'maya_booking.booking'
     _description = _('Reservas')
 
-    name = fields.Char(string=_("Motivo / Descripción"))
+    name = fields.Char(string=_("Descripción"), compute='_compute_name', store=True)
 
     reason =  fields.Selection(
        [('TC', _('Tutoria colectiva')),     
@@ -28,7 +28,8 @@ class Booking(models.Model):
     booking_resource_id = fields.Many2one(
         comodel_name='maya_booking.booking_resource', 
         string=_("Recurso a reservar"), 
-        required=True
+        required=True,
+        domain="[('is_bookable', '=', True)]" # Oculta recursos no reservables del desplegable
     )
     
     user_id = fields.Many2one(
@@ -67,6 +68,104 @@ class Booking(models.Model):
       string=_("Sesiones disponibles"),
     )
 
+<<<<<<< feature/create-resource-record-on-bookeable
+    @api.depends('reason')
+    def _compute_name(self):
+        for record in self:
+            if record.reason:
+                # extrae la etiqueta legible ("Tutoría individual") en lugar del código ("TI")
+                reason_label = dict(self._fields['reason'].selection).get(record.reason, record.reason)
+                record.name = reason_label
+            else:
+                record.name = "Nueva Reserva"
+
+
+    @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
+    def _compute_available_sessions(self):
+        for record in self:
+            if not record.booking_date or not record.booking_resource_id:
+                record.available_session_ids = False
+                continue
+
+            recurso_fisico = record.booking_resource_id.reservable_ref
+            
+            if not recurso_fisico:
+                record.available_session_ids = False
+                continue
+
+            weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+            day_code = weekday_map.get(record.booking_date.weekday())
+
+            domain = [
+                ('id', 'in', recurso_fisico.session_schedule_ids.ids), # SOLO las asignadas al Place
+                ('week_day', '=', day_code),
+                ('active', '=', True),
+            ]
+
+            existing_bookings = self.env['maya_booking.booking'].sudo().search([
+                ('booking_date', '=', record.booking_date),
+                ('booking_resource_id', '=', record.booking_resource_id.id),
+                ('id', '!=', record._origin.id if record._origin else False),
+            ])
+            
+            booked_session_ids = existing_bookings.mapped('session_ids').ids
+            if booked_session_ids:
+                domain.append(('id', 'not in', booked_session_ids))
+
+            record.available_session_ids = self.env['maya_core.session_schedule'].sudo().search(domain)
+
+
+    """ def _onchange_filter_sessions(self):
+      
+      Filtra sesiones por:
+      1. Día de la semana y ubicación.
+      2. Disponibilidad (que no estén ya reservadas por otros).
+      3. Continuidad (solo mostrar la siguiente a la última elegida).
+      
+      if not self.booking_date or not self.booking_resource_id:
+        return {'domain': {'session_ids': [('id', '=', 0)]}}
+
+      # 1. Filtro básico: Día y Ubicación
+      weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+      day_code = weekday_map.get(self.booking_date.weekday())
+      
+      if not day_code:
+        return {'domain': {'session_ids': [('id', '=', 0)]}}
+
+      location_id = self.booking_resource_id.reservable_ref.location_id.id
+      
+      # Base del dominio
+      domain = [
+          ('week_day', '=', day_code),
+          ('location_id', '=', location_id),
+          ('active', '=', True)
+      ]
+
+      # 2. Excluir sesiones ya reservadas por otros en esa fecha
+      # Buscamos reservas confirmadas para este recurso y fecha
+      existing_bookings = self.env['maya_booking.booking'].search([
+          ('booking_date', '=', self.booking_date),
+          ('booking_resource_id', '=', self.booking_resource_id.id),
+          ('id', '!=', self._origin.id if self._origin else False) # Ignorar la reserva actual
+      ])
+      
+      booked_session_ids = existing_bookings.mapped('session_ids').ids
+      if booked_session_ids:
+          domain.append(('id', 'not in', booked_session_ids))
+
+      # 3. Lógica de "Posteriores y Consecutivas"
+      if self.session_ids:
+          # Obtenemos la hora de fin de la sesión más tardía seleccionada
+          last_end_time = max(self.session_ids.mapped('end_time'))
+          
+          # Filtramos para que SOLO aparezca la sesión que empieza justo donde acaba la anterior
+          # Esto obliga a que la selección sea perfectamente encadenada
+          domain.append(('start_time', '=', last_end_time))
+      
+      return {'domain': {'session_ids': domain}} """
+    
+    
+=======
     @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
     def _compute_available_sessions(self):
       for record in self:
@@ -107,73 +206,138 @@ class Booking(models.Model):
             domain.append(('start_time', '=', last_end_time))
 
         record.available_session_ids = self.env['maya_core.session_schedule'].search(domain)
+>>>>>>> develop
 
     @api.depends('booking_date', 'session_ids.start_time', 'session_ids.end_time')
     def _compute_dates(self):
-      """
-      Calcula el inicio de la primera sesión y el fin de la última
-      combinándolos con la fecha de la reserva.
-      """
-      for record in self:
-        if record.booking_date and record.session_ids:
-          # 1. Obtener los extremos de las sesiones seleccionadas
-          # Usamos min y max sobre el conjunto de sesiones vinculadas
-          start_hour = min(record.session_ids.mapped('start_time'))
-          end_hour = max(record.session_ids.mapped('end_time'))
+        for record in self:
+            if record.booking_date and record.session_ids:
+                # Ordenar sesiones para asegurar que cogemos el inicio real y el fin real
+                start_hour = min(record.session_ids.mapped('start_time'))
+                end_hour = max(record.session_ids.mapped('end_time'))
 
-          # 2. Helper para convertir Float (9.5) a Datetime
-          record.date_start = self._combine_date_and_float(record.booking_date, start_hour)
-          record.date_stop = self._combine_date_and_float(record.booking_date, end_hour)
-        else:
-          record.date_start = False
-          record.date_stop = False
+                record.date_start = self._combine_date_and_float(record.booking_date, start_hour)
+                record.date_stop = self._combine_date_and_float(record.booking_date, end_hour)
+            else:
+                record.date_start = False
+                record.date_stop = False
 
     def _combine_date_and_float(self, base_date, float_time):
-      """
-      Convierte una fecha y una hora float en un objeto Datetime.
-      Ejemplo: 2026-04-17 + 9.5 -> 2026-04-17 09:30:00
-      """
-      # Extraer horas y minutos del float (ej: 9.75 -> 9 horas, 0.75 * 60 = 45 min)
-      hours = int(float_time)
-      minutes = int(round((float_time - hours) * 60))
-      
-      # Combinar con la fecha base
-      return datetime.combine(base_date, datetime.min.time()).replace(
-          hour=hours, minute=minutes
-      )
+        """
+        Convierte una fecha y una hora float en un objeto Datetime UTC.
+        """
+        hours = int(float_time)
+        minutes = int(round((float_time - hours) * 60))
+        
+        naive_dt = datetime.combine(base_date, datetime.min.time()).replace(
+            hour=hours, minute=minutes
+        )
+        
+        user_tz_name = self.env.user.tz or 'Europe/Madrid'
+        user_tz = pytz.timezone(user_tz_name)
+        
+        local_dt = user_tz.localize(naive_dt)
+        
+        return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
     
     @api.model
     def get_sessions_for_slot(self, resource_id, date_str, start_float, end_float):
-      """
-      Dado un recurso, fecha y rango horario (floats),
-      devuelve las sesiones que cubren ese rango.
-      Usado desde el timeline JS para pre-rellenar el formulario.
-      """
-      from datetime import date as date_type
+        """
+        Dado un recurso, fecha y rango horario (floats),
+        devuelve las sesiones que cubren ese rango.
+        Usado desde el timeline JS para pre-rellenar el formulario.
+        """
+        from datetime import date as date_type
 
-      # Convertir fecha string a date
-      booking_date = fields.Date.from_string(date_str)
+        # Convertir fecha string a date
+        booking_date = fields.Date.from_string(date_str)
 
-      # Día de la semana
-      weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
-      day_code = weekday_map.get(booking_date.weekday())
-      if not day_code:
-          return []
+        # Día de la semana
+        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+        day_code = weekday_map.get(booking_date.weekday())
+        if not day_code:
+            return []
 
-      # Obtener location del recurso
-      resource = self.env['maya_booking.booking_resource'].browse(resource_id)
-      if not resource or not resource.reservable_ref:
-          return []
+        # Obtener el recurso
+        resource = self.env['maya_booking.booking_resource'].browse(resource_id)
+        if not resource or not resource.reservable_ref:
+            return []
 
-      location_id = resource.reservable_ref.location_id.id
+        # recurso físico real
+        recurso_fisico = resource.reservable_ref
 
-      # Buscar sesiones que solapen con el rango seleccionado
-      sessions = self.env['maya_core.session_schedule'].search([
-          ('week_day', '=', day_code),
-          ('location_id', '=', location_id),
-          ('active', '=', True),
-          ('start_time', '<', end_float),    # empieza antes del fin del slot
-          ('end_time', '>', start_float),    # termina después del inicio del slot
-      ], order='start_time asc')
+        sessions = self.env['maya_core.session_schedule'].search([
+            ('id', 'in', recurso_fisico.session_schedule_ids.ids), 
+            ('week_day', '=', day_code),
+            ('active', '=', True),
+            ('start_time', '<', end_float),   
+            ('end_time', '>', start_float),   
+        ], order='start_time asc')
 
-      return sessions.ids
+        return sessions.ids
+    
+    @api.constrains('booking_resource_id', 'date_stop')
+    def _check_resource_is_bookable(self):
+        for record in self:
+            resource = record.booking_resource_id
+            
+            if resource and not resource.is_bookable:
+                
+                if resource.reservable_model and resource.reservable_id:
+                    physical_record = self.env[resource.reservable_model].sudo().browse(resource.reservable_id)
+                    
+                    if hasattr(physical_record, 'last_reservation_date') and physical_record.last_reservation_date:
+
+                        if record.date_stop and record.date_stop > physical_record.last_reservation_date:
+                            
+                            user_tz = pytz.timezone(self.env.user.tz or 'Europe/Madrid')
+                            local_dt = pytz.utc.localize(physical_record.last_reservation_date).astimezone(user_tz)
+                            formatted_date = local_dt.strftime('%d/%m/%Y a las %H:%M')
+                            
+                            raise ValidationError(
+                                _("El recurso '%s' pasará a estar 'No Reservable'. Solo admite reservas que terminen antes del %s.") % 
+                                (resource.resource_name, formatted_date)
+                            )
+                    else:
+                        # Si no es reservable y no tiene fecha límite (nunca tuvo reservas o se limpió), se bloquea del todo
+                        raise ValidationError(_("El recurso '%s' ha sido marcado como 'No Reservable' y no admite nuevas reservas.") % resource.resource_name)
+                    
+    @api.constrains('booking_date', 'booking_resource_id')
+    def _check_max_days_in_advance(self):
+        """
+        Valida que la reserva no supere el límite de días de antelación
+        configurado en el recurso físico (Place, Employee, etc.).
+        """
+        for record in self:
+            if not record.booking_date or not record.booking_resource_id:
+                continue
+
+            resource = record.booking_resource_id
+            
+            # Buscamos el registro físico real para leer su configuración
+            if resource.reservable_model and resource.reservable_id:
+                physical_record = self.env[resource.reservable_model].sudo().browse(resource.reservable_id)
+                
+                # Verificamos que el recurso tenga el campo y que el límite sea mayor que 0 (0 = sin límite)
+                if hasattr(physical_record, 'max_days_in_advance') and physical_record.max_days_in_advance > 0:
+                    
+                    # Obtenemos la fecha actual ajustada a la zona horaria del usuario
+                    today = fields.Date.context_today(self)
+                    
+                    # Calculamos la diferencia en días
+                    diferencia_dias = (record.booking_date - today).days
+                    
+                    if diferencia_dias > physical_record.max_days_in_advance:
+                        
+                        # Calculamos la fecha máxima exacta para dársela mascadita al usuario en el error
+                        fecha_maxima = today + timedelta(days=physical_record.max_days_in_advance)
+                        fecha_maxima_str = fecha_maxima.strftime('%d/%m/%Y')
+                        
+                        raise ValidationError(
+                            _("No puedes reservar el recurso '%s' con más de %s días de antelación. "
+                              "La fecha máxima permitida para este recurso es el %s.") % (
+                                resource.resource_name, 
+                                physical_record.max_days_in_advance,
+                                fecha_maxima_str
+                            )
+                        )

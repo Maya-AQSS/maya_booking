@@ -75,12 +75,11 @@ class BookingType(models.Model):
       """
       Abre la vista timeline desde el kanban
       """
-      self.ensure_one() 
-    
+      self.ensure_one()
       return {
         'name': f'Calendario: {self.name}',
         'type': 'ir.actions.act_window',
-        'res_model': 'maya_booking.booking', 
+        'res_model': 'maya_booking.booking',
         'view_mode': 'timeline,list,form',
         # filtro para mostrar solo las reservas de este tipo de recurso
         'domain': [('booking_resource_id.booking_type_ids.resource_type', '=', self.resource_type)],
