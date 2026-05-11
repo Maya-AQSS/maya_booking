@@ -68,6 +68,7 @@ class Booking(models.Model):
       string=_("Sesiones disponibles"),
     )
 
+<<<<<<< feature/create-resource-record-on-bookeable
     @api.depends('reason')
     def _compute_name(self):
         for record in self:
@@ -164,6 +165,48 @@ class Booking(models.Model):
       return {'domain': {'session_ids': domain}} """
     
     
+=======
+    @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
+    def _compute_available_sessions(self):
+      for record in self:
+        if not record.booking_date or not record.booking_resource_id:
+          record.available_session_ids = False
+          continue
+
+        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+        day_code = weekday_map.get(record.booking_date.weekday())
+
+        if not day_code:
+          record.available_session_ids = False
+          continue
+
+        location_id = record.booking_resource_id.reservable_ref.location_id.id
+
+        domain = [
+            ('week_day', '=', day_code),
+            ('location_id', '=', location_id),
+            ('active', '=', True),
+        ]
+
+        origin_id = record._origin.id if record._origin else False
+
+        # Excluir sesiones ya reservadas por otros para ese recurso y fecha
+        existing_bookings = self.env['maya_booking.booking'].search([
+            ('booking_date', '=', record.booking_date),
+            ('booking_resource_id', '=', record.booking_resource_id.id),
+            ('id', '!=', origin_id),
+        ])
+        booked_session_ids = existing_bookings.mapped('session_ids').ids
+        if booked_session_ids:
+            domain.append(('id', 'not in', booked_session_ids))
+
+        # Consecutividad: solo la siguiente a la última seleccionada
+        if record.session_ids:
+            last_end_time = max(record.session_ids.mapped('end_time'))
+            domain.append(('start_time', '=', last_end_time))
+
+        record.available_session_ids = self.env['maya_core.session_schedule'].search(domain)
+>>>>>>> develop
 
     @api.depends('booking_date', 'session_ids.start_time', 'session_ids.end_time')
     def _compute_dates(self):
