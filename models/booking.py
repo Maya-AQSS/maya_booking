@@ -97,14 +97,14 @@ class Booking(models.Model):
                 record.available_session_ids = False
                 continue
 
-            # 1. Filtro base: Sesiones del recurso, del día correcto y activas
+            # Sesiones del recurso, del día correcto y activas
             domain = [
                 ('id', 'in', recurso_fisico.session_schedule_ids.ids),
                 ('week_day', '=', day_code),
                 ('active', '=', True),
             ]
 
-            # 2. Excluir sesiones ya reservadas por otros (evitar solapamiento)
+            # Excluir sesiones ya reservadas por otros 
             existing_bookings = self.env['maya_booking.booking'].sudo().search([
                 ('booking_date', '=', record.booking_date),
                 ('booking_resource_id', '=', record.booking_resource_id.id),
@@ -115,8 +115,7 @@ class Booking(models.Model):
             if booked_session_ids:
                 domain.append(('id', 'not in', booked_session_ids))
 
-            # 3. Lógica de consecutividad (Herencia de develop)
-            # Si ya hay sesiones elegidas, solo mostramos la que va justo después de la última
+            # Sesiones consecutivas
             if record.session_ids:
                 last_end_time = max(record.session_ids.mapped('end_time'))
                 domain.append(('start_time', '=', last_end_time))
