@@ -40,6 +40,14 @@ class Booking(models.Model):
         readonly=True
     )
 
+    target_user_id = fields.Many2one(
+        comodel_name='res.users',
+        string=_("Usuario Destinatario"),
+        help=_("Usuario que va a hacer uso de la reserva"),
+        default=lambda self: self.env.user,
+        required=True
+    )
+
     booking_date = fields.Date(
         string=_("Fecha"), 
         help=_("Fecha de la reserva"),
