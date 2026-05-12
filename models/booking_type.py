@@ -35,6 +35,18 @@ class BookingType(models.Model):
         string=_('Modelo de recurso'),
     )
 
+    num_max_session_consecutive = fields.Integer(
+    string='Máximo sesiones', 
+    default=2,
+    help="Valor por defecto si el recurso tiene 0"
+    )
+
+    max_days_in_advance = fields.Integer(
+        string='Días antelación', 
+        default=15,
+        help="Valor por defecto si el recurso tiene 0"
+    )
+
     """ bookable_resource_ids = fields.Many2many(
         'maya_booking.resource',
         string=_('Recursos disponibles'),

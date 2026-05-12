@@ -58,8 +58,14 @@ class MayaBookingApi(http.Controller):
             for s in phys_rec.session_schedule_ids:
                 sessions_by_day.setdefault(s.week_day, []).append(s.id)
 
+           
+            # Si el recurso tiene > 0, manda el recurso, si es 0 se usa el valor del booking_type
+            effective_advance_days = phys_rec.max_days_in_advance if phys_rec.max_days_in_advance > 0 else booking_type.max_days_in_advance
+            effective_max_consec = phys_rec.num_max_session_consecutive if phys_rec.num_max_session_consecutive > 0 else booking_type.num_max_session_consecutive
+
             has_free_slot = False
-            days_to_check = phys_rec.max_days_in_advance if phys_rec.max_days_in_advance > 0 else 30
+            
+            days_to_check = effective_advance_days if effective_advance_days > 0 else 30
 
             for i in range(days_to_check):
                 check_date = today + timedelta(days=i)
@@ -94,8 +100,8 @@ class MayaBookingApi(http.Controller):
                 'booking_resource_id': br.id, 
                 'name': phys_rec.display_name if hasattr(phys_rec, 'display_name') else br.resource_name,
                 'resource_model': br.reservable_model, # Indica si es un espacio, empleado, etc.
-                'max_consecutive': phys_rec.num_max_session_consecutive,
-                'advance_days': phys_rec.max_days_in_advance,
+                'max_consecutive': effective_max_consec,
+                'advance_days': effective_advance_days,
                 'is_closing_soon': not phys_rec.bookable
             }
 

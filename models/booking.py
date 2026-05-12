@@ -261,47 +261,38 @@ class Booking(models.Model):
                     
     @api.constrains('booking_date', 'booking_resource_id')
     def _check_max_days_in_advance(self):
-        """
-        Valida que la reserva no supere el límite de días de antelación
-        configurado en el recurso físico (Place, Employee, etc.).
-        """
         for record in self:
             if not record.booking_date or not record.booking_resource_id:
                 continue
 
             resource = record.booking_resource_id
+            # registro físico
+            phys_rec = resource.reservable_ref
             
-            # Buscamos el registro físico real para leer su configuración
-            if resource.reservable_model and resource.reservable_id:
-                physical_record = self.env[resource.reservable_model].sudo().browse(resource.reservable_id)
+            if not phys_rec:
+                continue
+
+            limit = phys_rec.max_days_in_advance or (record.booking_type_id.max_days_in_advance if record.booking_type_id else 0)
+
+            if limit > 0:
+                today = fields.Date.context_today(self)
+                diferencia_dias = (record.booking_date - today).days
                 
-                # Verificamos que el recurso tenga el campo y que el límite sea mayor que 0 (0 = sin límite)
-                if hasattr(physical_record, 'max_days_in_advance') and physical_record.max_days_in_advance > 0:
+                if diferencia_dias > limit:
+                    fecha_maxima = today + timedelta(days=limit)
+                    fecha_maxima_str = fecha_maxima.strftime('%d/%m/%Y')
                     
-                    # Obtenemos la fecha actual ajustada a la zona horaria del usuario
-                    today = fields.Date.context_today(self)
-                    
-                    # Calculamos la diferencia en días
-                    diferencia_dias = (record.booking_date - today).days
-                    
-                    if diferencia_dias > physical_record.max_days_in_advance:
-                        
-                        # Calculamos la fecha máxima exacta para dársela mascadita al usuario en el error
-                        fecha_maxima = today + timedelta(days=physical_record.max_days_in_advance)
-                        fecha_maxima_str = fecha_maxima.strftime('%d/%m/%Y')
-                        
-                        raise ValidationError(
-                            _("No puedes reservar el recurso '%s' con más de %s días de antelación. "
-                              "La fecha máxima permitida para este recurso es el %s.") % (
-                                resource.resource_name, 
-                                physical_record.max_days_in_advance,
-                                fecha_maxima_str
-                            )
+                    raise ValidationError(
+                        _("No puedes reservar el recurso '%s' con más de %s días de antelación. "
+                          "La fecha máxima permitida según la configuración actual es el %s.") % (
+                            resource.resource_name, 
+                            limit,
+                            fecha_maxima_str
                         )
+                    )
     
     def write(self, vals):
-        # Si el Timeline (u otro proceso) intenta cambiar las fechas directamente
-        # pero NO está cambiando las sesiones, bloqueamos el movimiento.
+        # Si se intenta cambiar las fechas directamente pero NO está cambiando las sesiones, se bloquea la acción
         if ('date_start' in vals or 'date_stop' in vals) and 'session_ids' not in vals:
             raise ValidationError(_("No puedes mover las reservas arrastrándolas. "
                                     "Por favor, abre la reserva y cambia las sesiones asignadas."))

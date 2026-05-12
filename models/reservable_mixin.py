@@ -19,10 +19,17 @@ class ReservableMixin(models.AbstractModel):
         ('I', 'Elemento de inventario'),
     ], string='Tipo de recurso', default='S')
     
-    num_max_session_consecutive = fields.Integer(string='Número máximo de sesiones consecutivas', 
-                                                 help="0: Sin límite", default=2)
-
-    max_days_in_advance = fields.Integer(string='Reserva con antelación (días)', default=15)
+    num_max_session_consecutive = fields.Integer(
+    string='Máx. sesiones consecutivas', 
+    default=0, 
+    help="Si es 0, usará el valor definido en el Tipo de Reserva."
+    )
+    
+    max_days_in_advance = fields.Integer(
+        string='Días de antelación', 
+        default=0, 
+        help="Si es 0, usará el valor definido en el Tipo de Reserva."
+    )
 
     # Campo de fecha de última reserva
     last_reservation_date = fields.Datetime(string=_('Última reserva')) 
