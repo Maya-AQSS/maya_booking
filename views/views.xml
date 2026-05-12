@@ -50,10 +50,14 @@
           </div>
           <group>
             <group>
-            <field name="description"/>
-            <field name="duration"/>
-            <!-- <field name="resource_type"/> -->
-            <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+              <field name="description"/>
+              <field name="duration"/>
+              <!-- <field name="resource_type"/> -->
+              <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+            </group>
+            <group>
+              <field name="num_max_session_consecutive"/>
+              <field name="max_days_in_advance"/>
             </group>
           </group>
           <notebook>
