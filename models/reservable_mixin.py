@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError
+from datetime import timedelta
+
+_logger = logging.getLogger(__name__)
 
 class ReservableMixin(models.AbstractModel):
     _name = 'maya_booking.reservable.mixin'
@@ -16,20 +20,76 @@ class ReservableMixin(models.AbstractModel):
     ], string='Tipo de recurso', default='S')
     
     num_max_session_consecutive = fields.Integer(string='Número máximo de sesiones consecutivas', 
-                                                 help="Número máximo de sesiones consecutivas que se pueden reservar. 0: Sin límite (hasta final del día)",
-                                               default=2)
+                                                 help="0: Sin límite", default=2)
 
-    max_days_in_advance = fields.Integer(string='Reserva con antelación (días)', 
-                                         help="Máximos días de antelación con los que se puede realizar una reserva. 0: sin límite", default=15)
+    max_days_in_advance = fields.Integer(string='Reserva con antelación (días)', default=15)
 
-    # cada vez que se añada una reserva debe actualizarse
-    # es útil para gestionar las reservas en caso de que el recurso pase a ser no reservable
+    # Campo de fecha de última reserva
     last_reservation_date = fields.Datetime(string=_('Última reserva')) 
+
+    pending_bookings_count = fields.Integer(
+        string=_('Reservas pendientes'), 
+        readonly=True, default=0,
+        help="Número de reservas futuras cuando se desactiva el recurso"
+    )
 
     session_schedule_ids = fields.Many2many(
         "maya_core.session_schedule",
         string=_("Horarios posibles de reserva"),
-        help=_("Consultar las reservas para ver la disponibilidad"),
     )
 
     display_name = fields.Char(string="Descripción", compute="_compute_display_name")
+
+    @api.onchange('bookable')
+    def _onchange_bookable_update_last_reservation(self):
+        for record in self:
+            real_id = record._origin.id if hasattr(record, '_origin') and record._origin else record.id
+
+            if not record.bookable and real_id:
+                resource = self.env['maya_booking.booking_resource'].search([
+                    ('reservable_model', '=', self._name),
+                    ('reservable_id', '=', real_id)
+                ], limit=1)
+
+                if resource:
+                    # 1. Calculamos las reservas pendientes (futuras)
+                    pending_count = self.env['maya_booking.booking'].search_count([
+                        ('booking_resource_id', '=', resource.id),
+                        ('date_stop', '>=', fields.Datetime.now())
+                    ])
+                    record.pending_bookings_count = pending_count
+
+                    # 2. Buscamos la última reserva para last_reservation_date
+                    last_booking = self.env['maya_booking.booking'].search(
+                        [
+                            ('booking_resource_id', '=', resource.id),
+                            ('date_stop', '!=', False)
+                        ],
+                        order='date_stop desc',
+                        limit=1
+                    )
+                    
+                    if last_booking and last_booking.date_stop:
+                        record.last_reservation_date = last_booking.date_stop
+                    else:
+                        record.last_reservation_date = False
+                else:
+                    record.last_reservation_date = False
+                    record.pending_bookings_count = 0
+            else:
+                # Si se vuelve a marcar como reservable, limpiamos los campos
+                record.last_reservation_date = False
+                record.pending_bookings_count = 0
+
+    # (Mantenemos el resto del código igual...)
+    def write(self, vals):
+        res = super().write(vals)
+        if 'bookable' in vals:
+            for record in self:
+                resources = self.env['maya_booking.booking_resource'].sudo().search([
+                    ('reservable_model', '=', self._name),
+                    ('reservable_id', '=', record.id)
+                ])
+                if resources:
+                    resources.write({'is_bookable': vals['bookable']})
+        return res
