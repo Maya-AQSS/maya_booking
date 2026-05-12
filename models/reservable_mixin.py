@@ -41,6 +41,19 @@ class ReservableMixin(models.AbstractModel):
 
     display_name = fields.Char(string="Descripción", compute="_compute_display_name")
 
+    @api.constrains('num_max_session_consecutive', 'max_days_in_advance')
+    def _check_valid_ranges(self):
+        """
+        Aplica las restricciones de rango para todos los modelos que hereden este mixin.
+        (Las restricciones SQL no se heredan desde AbstractModels).
+        """
+        for record in self:
+            if record.num_max_session_consecutive < 0 or record.num_max_session_consecutive > 6:
+                raise ValidationError(_("El número máximo de sesiones consecutivas debe estar entre 0 y 6."))
+            
+            if record.max_days_in_advance < 0 or record.max_days_in_advance > 90:
+                raise ValidationError(_("Los días de antelación para la reserva deben estar entre 0 y 90."))
+
     @api.onchange('bookable')
     def _onchange_bookable_update_last_reservation(self):
         for record in self:

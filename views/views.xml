@@ -56,8 +56,8 @@
               <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
             </group>
             <group>
-              <field name="num_max_session_consecutive"/>
-              <field name="max_days_in_advance"/>
+              <field name="num_max_session_consecutive" options="{'type': 'number', 'step': 1}"/>
+              <field name="max_days_in_advance" options="{'type': 'number', 'step': 1}"/>
             </group>
           </group>
           <notebook>
