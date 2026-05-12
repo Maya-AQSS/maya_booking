@@ -68,7 +68,6 @@ class Booking(models.Model):
       string=_("Sesiones disponibles"),
     )
 
-<<<<<<< feature/resoruce-count-pendents-reservations
     @api.depends('reason')
     def _compute_name(self):
         for record in self:
@@ -79,7 +78,6 @@ class Booking(models.Model):
             else:
                 record.name = "Nueva Reserva"
 
-
     @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
     def _compute_available_sessions(self):
         for record in self:
@@ -88,7 +86,6 @@ class Booking(models.Model):
                 continue
 
             recurso_fisico = record.booking_resource_id.reservable_ref
-            
             if not recurso_fisico:
                 record.available_session_ids = False
                 continue
@@ -96,12 +93,18 @@ class Booking(models.Model):
             weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
             day_code = weekday_map.get(record.booking_date.weekday())
 
+            if not day_code:
+                record.available_session_ids = False
+                continue
+
+            # Sesiones del recurso, del día correcto y activas
             domain = [
-                ('id', 'in', recurso_fisico.session_schedule_ids.ids), # SOLO las asignadas al Place
+                ('id', 'in', recurso_fisico.session_schedule_ids.ids),
                 ('week_day', '=', day_code),
                 ('active', '=', True),
             ]
 
+            # Excluir sesiones ya reservadas por otros 
             existing_bookings = self.env['maya_booking.booking'].sudo().search([
                 ('booking_date', '=', record.booking_date),
                 ('booking_resource_id', '=', record.booking_resource_id.id),
@@ -112,101 +115,12 @@ class Booking(models.Model):
             if booked_session_ids:
                 domain.append(('id', 'not in', booked_session_ids))
 
+            # Sesiones consecutivas
+            if record.session_ids:
+                last_end_time = max(record.session_ids.mapped('end_time'))
+                domain.append(('start_time', '=', last_end_time))
+
             record.available_session_ids = self.env['maya_core.session_schedule'].sudo().search(domain)
-
-
-    """ def _onchange_filter_sessions(self):
-      
-      Filtra sesiones por:
-      1. Día de la semana y ubicación.
-      2. Disponibilidad (que no estén ya reservadas por otros).
-      3. Continuidad (solo mostrar la siguiente a la última elegida).
-      
-      if not self.booking_date or not self.booking_resource_id:
-        return {'domain': {'session_ids': [('id', '=', 0)]}}
-
-      # 1. Filtro básico: Día y Ubicación
-      weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
-      day_code = weekday_map.get(self.booking_date.weekday())
-      
-      if not day_code:
-        return {'domain': {'session_ids': [('id', '=', 0)]}}
-
-      location_id = self.booking_resource_id.reservable_ref.location_id.id
-      
-      # Base del dominio
-      domain = [
-          ('week_day', '=', day_code),
-          ('location_id', '=', location_id),
-          ('active', '=', True)
-      ]
-
-      # 2. Excluir sesiones ya reservadas por otros en esa fecha
-      # Buscamos reservas confirmadas para este recurso y fecha
-      existing_bookings = self.env['maya_booking.booking'].search([
-          ('booking_date', '=', self.booking_date),
-          ('booking_resource_id', '=', self.booking_resource_id.id),
-          ('id', '!=', self._origin.id if self._origin else False) # Ignorar la reserva actual
-      ])
-      
-      booked_session_ids = existing_bookings.mapped('session_ids').ids
-      if booked_session_ids:
-          domain.append(('id', 'not in', booked_session_ids))
-
-      # 3. Lógica de "Posteriores y Consecutivas"
-      if self.session_ids:
-          # Obtenemos la hora de fin de la sesión más tardía seleccionada
-          last_end_time = max(self.session_ids.mapped('end_time'))
-          
-          # Filtramos para que SOLO aparezca la sesión que empieza justo donde acaba la anterior
-          # Esto obliga a que la selección sea perfectamente encadenada
-          domain.append(('start_time', '=', last_end_time))
-      
-      return {'domain': {'session_ids': domain}} """
-    
-    
-=======
-    @api.onchange('booking_date', 'booking_resource_id', 'session_ids')
-    def _compute_available_sessions(self):
-      for record in self:
-        if not record.booking_date or not record.booking_resource_id:
-          record.available_session_ids = False
-          continue
-
-        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
-        day_code = weekday_map.get(record.booking_date.weekday())
-
-        if not day_code:
-          record.available_session_ids = False
-          continue
-
-        location_id = record.booking_resource_id.reservable_ref.location_id.id
-
-        domain = [
-            ('week_day', '=', day_code),
-            ('location_id', '=', location_id),
-            ('active', '=', True),
-        ]
-
-        origin_id = record._origin.id if record._origin else False
-
-        # Excluir sesiones ya reservadas por otros para ese recurso y fecha
-        existing_bookings = self.env['maya_booking.booking'].search([
-            ('booking_date', '=', record.booking_date),
-            ('booking_resource_id', '=', record.booking_resource_id.id),
-            ('id', '!=', origin_id),
-        ])
-        booked_session_ids = existing_bookings.mapped('session_ids').ids
-        if booked_session_ids:
-            domain.append(('id', 'not in', booked_session_ids))
-
-        # Consecutividad: solo la siguiente a la última seleccionada
-        if record.session_ids:
-            last_end_time = max(record.session_ids.mapped('end_time'))
-            domain.append(('start_time', '=', last_end_time))
-
-        record.available_session_ids = self.env['maya_core.session_schedule'].search(domain)
->>>>>>> develop
 
     @api.depends('booking_date', 'session_ids.start_time', 'session_ids.end_time')
     def _compute_dates(self):
