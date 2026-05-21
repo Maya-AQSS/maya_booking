@@ -231,13 +231,20 @@ class Booking(models.Model):
                 continue
 
             resource = record.booking_resource_id
-            # registro físico
             phys_rec = resource.reservable_ref
             
             if not phys_rec:
                 continue
 
-            limit = phys_rec.max_days_in_advance or (record.booking_type_id.max_days_in_advance if record.booking_type_id else 0)
+            context_type_id = self.env.context.get('api_booking_type_id')
+            
+            if context_type_id:
+                booking_type = self.env['maya_booking.booking_type'].sudo().browse(context_type_id)
+            else:
+                booking_type = resource.booking_type_ids[0] if resource.booking_type_ids else False
+                
+            bt_limit = booking_type.max_days_in_advance if booking_type and booking_type.exists() else 0
+            limit = phys_rec.max_days_in_advance if phys_rec.max_days_in_advance > 0 else bt_limit
 
             if limit > 0:
                 today = fields.Date.context_today(self)
@@ -249,7 +256,7 @@ class Booking(models.Model):
                     
                     raise ValidationError(
                         _("No puedes reservar el recurso '%s' con más de %s días de antelación. "
-                          "La fecha máxima permitida según la configuración actual es el %s.") % (
+                          "La fecha máxima permitida es el %s.") % (
                             resource.resource_name, 
                             limit,
                             fecha_maxima_str

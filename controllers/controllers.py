@@ -1,6 +1,6 @@
 from odoo import http, fields
 from odoo.http import request
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 class MayaBookingApi(http.Controller):
 
@@ -167,3 +167,97 @@ class MayaBookingApi(http.Controller):
             'message': f'Encontrados {len(data)} recursos aptos con disponibilidad.',
             'data': data
         }
+    
+    @http.route('/api/maya_booking/booking/create', type='json', auth='public', methods=['POST'], csrf=False)
+    def create_booking_api(self, **kwargs):
+        resource_id = kwargs.get('booking_resource_id')
+        date_str = kwargs.get('booking_date') 
+        session_ids = kwargs.get('session_ids', []) 
+        reason = kwargs.get('reason', 'TI') 
+        description = kwargs.get('description')
+        target_user_id = kwargs.get('target_user_id') 
+        
+        booking_type_id = kwargs.get('booking_type_id') 
+
+        if not resource_id or not date_str or not session_ids or not description:
+            return {'status': 400, 'message': 'Faltan parámetros obligatorios.'}
+
+        try:
+            booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return {'status': 400, 'message': 'Formato de booking_date inválido.'}
+
+        resource = request.env['maya_booking.booking_resource'].sudo().browse(resource_id)
+        if not resource.exists():
+            return {'status': 404, 'message': 'El recurso reservable no existe.'}
+
+        phys_rec = resource.reservable_ref
+        if not phys_rec or not phys_rec.exists():
+            return {'status': 404, 'message': 'El recurso físico no existe.'}
+
+        today = fields.Date.context_today(request.env.user)
+        
+        if not phys_rec.bookable:
+            if not phys_rec.last_reservation_date:
+                return {'status': 400, 'message': "El recurso está deshabilitado."}
+            if booking_date > phys_rec.last_reservation_date.date():
+                return {'status': 400, 'message': "El recurso no admite reservas tan lejanas por estar en cierre."}
+
+        if booking_type_id:
+            b_type = request.env['maya_booking.booking_type'].sudo().browse(booking_type_id)
+        else:
+            b_type = resource.booking_type_ids[0] if resource.booking_type_ids else False
+            
+        bt_adv = b_type.max_days_in_advance if b_type and b_type.exists() else 0
+        eff_adv_days = phys_rec.max_days_in_advance if phys_rec.max_days_in_advance > 0 else bt_adv
+        eff_adv_days = eff_adv_days if eff_adv_days > 0 else 30
+
+        if (booking_date - today).days > eff_adv_days:
+            return {'status': 400, 'message': f"No puedes reservar con más de {eff_adv_days} días de antelación."}
+
+        weekday_map = {0: '0L', 1: '1M', 2: '2X', 3: '3J', 4: '4V'}
+        day_code = weekday_map.get(booking_date.weekday())
+        
+        if not day_code:
+            return {'status': 400, 'message': 'No se permiten reservas en fines de semana.'}
+
+        valid_resource_sessions = phys_rec.session_schedule_ids.filtered(
+            lambda s: s.week_day == day_code and s.active
+        ).ids
+
+        invalid_ids = [s_id for s_id in session_ids if s_id not in valid_resource_sessions]
+        if invalid_ids:
+            return {'status': 400, 'message': f'Las sesiones con ID {invalid_ids} no son válidas.'}
+        
+        existing_bookings = request.env['maya_booking.booking'].sudo().search([
+            ('booking_resource_id', '=', resource.id),
+            ('booking_date', '=', booking_date)
+        ])
+        already_booked_sessions = existing_bookings.mapped('session_ids').ids
+
+        overlapped = set(session_ids) & set(already_booked_sessions)
+        if overlapped:
+            return {'status': 409, 'message': 'Conflicto: Sesiones ya reservadas.'}
+
+        creator_user = request.env.user
+        final_target_user = target_user_id if target_user_id else creator_user.id
+
+        try:
+            new_booking = request.env['maya_booking.booking'].with_context(
+                api_booking_type_id=booking_type_id
+            ).sudo().create({
+                'booking_resource_id': resource.id,
+                'booking_date': booking_date,
+                'session_ids': [(6, 0, session_ids)],
+                'reason': reason,
+                'description': description,
+                'target_user_id': final_target_user,
+            })
+            
+            return {
+                'status': 201,
+                'message': 'Reserva creada con éxito.',
+                'data': {'booking_id': new_booking.id, 'name': new_booking.name}
+            }
+        except Exception as e:
+            return {'status': 500, 'message': f'Error interno: {str(e)}'}
