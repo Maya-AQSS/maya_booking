@@ -25,7 +25,10 @@
                         </div>
 
                         <div class="d-flex gap-2 me-5 position-relative" style="z-index: 11;">
-                            <button class="btn btn-sm btn-secondary" title="Publicar">Publicar</button>
+                            <button name="action_toggle_published" type="object" class="btn btn-sm btn-secondary">
+                                <t t-esc="record.published.raw_value ? 'Despublicar' : 'Publicar'"/>
+                            </button>
+                            
                             <button type="open" class="btn btn-sm btn-primary" title="Editar">Editar</button>
                         </div>
 
@@ -47,10 +50,14 @@
           </div>
           <group>
             <group>
-            <field name="description"/>
-            <field name="duration"/>
-            <!-- <field name="resource_type"/> -->
-            <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+              <field name="description"/>
+              <field name="duration"/>
+              <!-- <field name="resource_type"/> -->
+              <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+            </group>
+            <group>
+              <field name="num_max_session_consecutive" options="{'type': 'number', 'step': 1}"/>
+              <field name="max_days_in_advance" options="{'type': 'number', 'step': 1}"/>
             </group>
           </group>
           <notebook>
@@ -70,19 +77,31 @@
     </field>
   </record>
 
- <!-- View de place (añadido) --> 
+  <!-- View de place (añadido) --> 
   <record model="ir.ui.view" id="maya_booking.view_place_form_inherit">
     <field name="name">Formulario espacios. Añade reservas</field>
     <field name="model">maya_core.place</field>
     <field name="inherit_id" ref="maya_core.view_place_form"/>
     <field name="arch" type="xml">
       <xpath expr="/form/notebook/page[1]" position="after">
-        <page string = "Reservas">
+        <page string="Reservas">
           <group>
-            <field name="bookable" widget="boolean_toggle"/>
-            <field name="num_max_session_consecutive"/>
-            <field name="max_days_in_advance"/>
-            <field name="last_reservation_date"/>
+            <group>
+              <field name="bookable"/>
+              <field name="last_reservation_date" 
+                readonly="1" 
+                force_save="1" 
+                invisible="bookable"/>
+            </group>
+            <group>
+              <field name="num_max_session_consecutive" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+                    
+              <field name="max_days_in_advance" 
+                    readonly="not bookable" 
+                    options="{'type': 'number', 'step': 1}"/>
+            </group>
           </group>
         </page>
       </xpath>
@@ -124,6 +143,12 @@
                 <field name="user_id" nolabel="1" />
               </div>
             </group>
+            <group>
+              <div class="o_row">
+                <i class="fa fa-user-circle" title="Usuario Destinatario" style="margin-right: 7px;"/><label for="target_user_id"/>
+                <field name="target_user_id" nolabel="1" />
+              </div>
+            </group>
             <group>      
               <div class="o_row">
                 <i class="fa fa-calendar" title="Fecha de reserva" style="margin-right: 7px;"/><label for="booking_date"/>
@@ -154,28 +179,42 @@
     <field name="name">maya_booking.booking.timeline</field>
     <field name="model">maya_booking.booking</field>
     <field name="arch" type="xml">
-      <timeline date_start="date_start" 
+        <timeline date_start="date_start" 
                   date_stop="date_stop" 
                   default_group_by="booking_resource_id"
                   group_model="maya_booking.booking_resource"
                   event_open_popup="true"
                   zoomKey="ctrlKey"
                   mode="week"
-  
-                  colors="#FF7F7F: user_id != false;"> 
+                  stack="False"
+                  colors="#946bf3: reason == 'TC'; 
+                          #4f8bec: reason == 'TI'; 
+                          #40c498: reason == 'R'; 
+                          #e05555: reason == 'EX'; 
+                          #e470de: reason == 'O';"> 
           
-        <field name="name"/>
-        <field name="booking_resource_id"/>
-        <field name="user_id"/>
+            <field name="reason"/>
+            <field name="description"/>
+            <field name="target_user_id"/>
 
-        <templates>
-          <t t-name="timeline-item">
-            <div class="o_timeline_item_content" style="padding: 2px;">
-                <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
-            </div>
-          </t>
-        </templates>
-      </timeline>
+            <templates>
+                <t t-name="timeline-item">
+                    <div class="o_timeline_item_content" style="font-size: 0.9em; color: #111827;">
+                        
+                        <div style="margin-bottom: 4px;">
+                            <span style="font-weight: bold;"><t t-esc="record.reason"/></span>
+                            <span> - </span>
+                            <span t-esc="record.description"/>
+                        </div>
+                        
+                        <div style="font-style: italic; opacity: 0.9;">
+                            <t t-esc="record.target_user_id ? record.target_user_id[1] : 'Sistema'"/>
+                        </div>
+                        
+                    </div>
+                </t>
+            </templates>
+        </timeline>
     </field>
   </record>
   
