@@ -143,6 +143,12 @@
                 <field name="user_id" nolabel="1" />
               </div>
             </group>
+            <group>
+              <div class="o_row">
+                <i class="fa fa-user-circle" title="Usuario Destinatario" style="margin-right: 7px;"/><label for="target_user_id"/>
+                <field name="target_user_id" nolabel="1" />
+              </div>
+            </group>
             <group>      
               <div class="o_row">
                 <i class="fa fa-calendar" title="Fecha de reserva" style="margin-right: 7px;"/><label for="booking_date"/>
@@ -187,15 +193,24 @@
                           #e05555: reason == 'EX'; 
                           #e470de: reason == 'O';"> 
           
-            <field name="name"/>
-            <field name="booking_resource_id"/>
-            <field name="user_id"/>
             <field name="reason"/>
+            <field name="description"/>
+            <field name="target_user_id"/>
 
             <templates>
                 <t t-name="timeline-item">
-                    <div class="o_timeline_item_content" style="padding: 4px 4px; color: #111827; font-weight: 400;">
-                        <t t-esc="(record.user_id ? record.user_id[1] : 'Sistema') + ' - ' + record.name"/>
+                    <div class="o_timeline_item_content" style="font-size: 0.9em; color: #111827;">
+                        
+                        <div style="margin-bottom: 4px;">
+                            <span style="font-weight: bold;"><t t-esc="record.reason"/></span>
+                            <span> - </span>
+                            <span t-esc="record.description"/>
+                        </div>
+                        
+                        <div style="font-style: italic; opacity: 0.9;">
+                            <t t-esc="record.target_user_id ? record.target_user_id[1] : 'Sistema'"/>
+                        </div>
+                        
                     </div>
                 </t>
             </templates>
