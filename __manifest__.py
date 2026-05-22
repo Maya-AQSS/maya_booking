@@ -18,6 +18,7 @@
     'assets': {
         'web.assets_backend': [
             'maya_booking/static/src/css/booking_type_kanban.css',
+            'maya_booking/static/src/css/timeline.css',
             'maya_booking/static/src/js/booking_timeline.js',
         ],
     },
@@ -26,6 +27,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
+        'views/config_settings_views.xml',
         'demo/maya_booking.booking_resource.csv',
     ],
     

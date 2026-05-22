@@ -22,11 +22,32 @@ class BookingResource(models.Model):
     selection='_get_reservable_models',   # devuelve lista de modelos permitidos
     string="Recurso físico",
     compute='_compute_reservable_ref', 
-    # inverse='_inverse_reservable_ref', 
+    inverse='_inverse_reservable_ref', 
     store=True
   )
   
   resource_name = fields.Char(string="Descripción del recurso", compute="_compute_resource_name", store = True)
+
+  # Nuevo campo espejo (no hace falta mostrarlo en ninguna vista)
+  is_bookable = fields.Boolean(
+      string="Es reservable (Copia)",
+      compute="_compute_is_bookable",
+      store=True,
+      default=True
+  )
+
+  @api.depends('reservable_model', 'reservable_id')
+  def _compute_is_bookable(self):
+      for rec in self:
+          if rec.reservable_model and rec.reservable_id:
+              # Busca el registro físico real
+              real_record = self.env[rec.reservable_model].sudo().browse(rec.reservable_id)
+              if real_record.exists() and 'bookable' in real_record._fields:
+                  rec.is_bookable = real_record.bookable
+              else:
+                  rec.is_bookable = False
+          else:
+              rec.is_bookable = False
 
   @api.model
   def _get_reservable_models(self):
