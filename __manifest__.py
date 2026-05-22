@@ -27,6 +27,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
+        'views/config_settings_views.xml',
         'demo/maya_booking.booking_resource.csv',
     ],
     

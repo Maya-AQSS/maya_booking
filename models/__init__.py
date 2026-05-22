@@ -3,4 +3,5 @@ from . import booking_resource
 from . import booking_type
 from . import booking
 from . import reservable
+from . import res
 #from . import resource

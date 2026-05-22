@@ -35,15 +35,21 @@ class BookingType(models.Model):
         string=_('Modelo de recurso'),
     )
 
+    def _default_max_sessions(self):
+        return int(self.env['ir.config_parameter'].sudo().get_param('maya_booking.num_max_session_consecutive', 2))
+
+    def _default_max_days(self):
+        return int(self.env['ir.config_parameter'].sudo().get_param('maya_booking.max_days_in_advance', 15))
+
     num_max_session_consecutive = fields.Integer(
-    string='Máximo sesiones', 
-    default=2,
-    help="Valor por defecto si el recurso tiene 0"
+        string='Máximo sesiones', 
+        default=_default_max_sessions, 
+        help="Valor por defecto si el recurso tiene 0"
     )
 
     max_days_in_advance = fields.Integer(
         string='Días antelación', 
-        default=15,
+        default=_default_max_days,
         help="Valor por defecto si el recurso tiene 0"
     )
 
